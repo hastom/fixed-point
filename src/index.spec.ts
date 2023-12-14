@@ -1,4 +1,4 @@
-import {FixedPoint} from "./index";
+import { FixedPoint } from './index'
 
 describe('fixed-point', () => {
   // creation
@@ -241,7 +241,7 @@ describe('fixed-point', () => {
     expect(a.getPrecision()).toStrictEqual(2n)
   })
 
-  //eq
+  // eq
   it('must eq, same precisions, a > b', () => {
     const a = FixedPoint.fromDecimal(0.5, 2)
     const b = FixedPoint.fromDecimal(0.1, 2)
