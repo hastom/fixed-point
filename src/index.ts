@@ -49,7 +49,11 @@ export class FixedPoint {
   }
 
   div(arg: FixedPoint) {
-    this.base = FixedPoint.convertToPrecision(this.base, this.precision + arg.getPrecision(), this.precision) / arg.getBase()
+    this.base = FixedPoint.convertToPrecision(
+      this.base,
+      this.precision + arg.getPrecision(),
+      this.precision
+    ) / arg.getBase()
     return this
   }
 
