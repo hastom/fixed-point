@@ -261,7 +261,7 @@ describe('fixed-point', () => {
   // toString
   it('must output string, a < 0', () => {
     const a = FixedPoint.fromDecimal(0.1, 2)
-    expect(a.toString()).toStrictEqual('100')
+    expect(a.toString()).toStrictEqual('10')
   })
   it('must output string, a > 0', () => {
     const a = FixedPoint.fromDecimal(123.1, 5)

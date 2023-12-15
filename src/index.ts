@@ -52,7 +52,7 @@ export class FixedPoint {
     this.base = FixedPoint.convertToPrecision(
       this.base,
       this.precision + arg.getPrecision(),
-      this.precision
+      this.precision,
     ) / arg.getBase()
     return this
   }
