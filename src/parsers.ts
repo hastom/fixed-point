@@ -1,15 +1,18 @@
 import { Base, FPParser, Numeric, Precision } from './types'
 import { toPrecision } from './math'
-import { FixedPoint } from './index'
+
+import { FixedPoint } from './FixedPoint'
 
 export const parsePrecision = (precision: Precision): bigint => {
   return BigInt(precision)
 }
+
 const parseDecimalString = (decimal: string): [bigint, bigint] => {
   const [i, d = ''] = decimal.split('.')
   const p = BigInt(d.length)
   return [BigInt(i) * (10n ** p) + BigInt(d), p]
 }
+
 const parseBase = (base: Base): [bigint, bigint] => {
   const baseString = base.toString()
   if (baseString.includes('e')) {

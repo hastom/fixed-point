@@ -1,4 +1,4 @@
-import { FixedPoint } from './index'
+import { FixedPoint } from './FixedPoint'
 
 export type Base = number | string | bigint
 export type Precision = number | bigint
