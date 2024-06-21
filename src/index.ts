@@ -1,12 +1,29 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { FPParser, Numeric, Precision } from './types'
-import { abs, max, toPrecision } from './math'
+import { abs, max, min, toPrecision } from './math'
 import { FP, parsePrecision } from './parsers'
 
-const pickPrecision = (aPrecision: bigint, bPrecision: bigint, resultPrecision?: Precision): bigint => {
-  return typeof resultPrecision !== 'undefined'
-    ? parsePrecision(resultPrecision)
-    : max(aPrecision, bPrecision)
+type PrecisionResolution = 'left' | 'right' | 'min' | 'max'
+
+const pickPrecision = (
+  aPrecision: bigint,
+  bPrecision: bigint,
+  precisionResolution: PrecisionResolution,
+  resultPrecision?: Precision,
+): bigint => {
+  if (typeof resultPrecision !== 'undefined') {
+    return parsePrecision(resultPrecision)
+  }
+  switch (precisionResolution) {
+    case 'left':
+      return aPrecision
+    case 'right':
+      return bPrecision
+    case 'min':
+      return min(aPrecision, bPrecision)
+    case 'max':
+      return max(aPrecision, bPrecision)
+  }
 }
 
 export class FixedPoint {
@@ -14,6 +31,8 @@ export class FixedPoint {
   readonly #base: bigint
 
   readonly #precision: bigint
+
+  protected readonly precisionResolution: PrecisionResolution = 'left'
 
   protected readonly parser: FPParser = FP
 
@@ -34,10 +53,9 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    console.log(aBase, bBase)
     return new (this.constructor as any)(aBase + bBase, newPrecision)
   }
 
@@ -45,7 +63,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
     return new (this.constructor as any)(aBase - bBase, newPrecision)
@@ -55,7 +73,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = this.base
     const bBase = parsedArg.base
     const newBase = toPrecision(aBase * bBase, newPrecision, aPrecision + bPrecision)
@@ -66,7 +84,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = this.base
     const bBase = parsedArg.base
     const newBase = toPrecision(aBase, aPrecision + bPrecision, aPrecision) / bBase
@@ -77,7 +95,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
     return aBase === bBase
@@ -87,7 +105,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
     return aBase > bBase
@@ -97,7 +115,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
     return aBase < bBase
@@ -107,7 +125,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
     return aBase >= bBase
@@ -117,7 +135,7 @@ export class FixedPoint {
     const parsedArg = this.parser(arg)
     const aPrecision = this.precision
     const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision)
+    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
     return aBase <= bBase

@@ -13,22 +13,11 @@ class _BTC extends FixedPoint {
   protected parser: FPParser = BTC
 }
 
-const Satoshi: FPParser = (numeric: FixedPoint | Numeric) => {
-  if (numeric instanceof FixedPoint) {
-    return numeric
-  }
-  return new _Satoshi(...parseNumeric(numeric, 0))
-}
-
-class _Satoshi extends FixedPoint {
-  protected parser: FPParser = Satoshi
-}
-
 describe('fixed-point', () => {
 
-  it('must add different precisions', () => {
-    const a = BTC(1)
-    const b = Satoshi(1)
-    expect(a.add(b).toDecimalString()).toBe('1.00000001')
+  it('must add', () => {
+    const a = BTC(1.24)
+    expect(a.add(0.17).toDecimalString()).toBe('1.41000000')
   })
+
 })
