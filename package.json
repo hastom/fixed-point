@@ -10,7 +10,8 @@
     "lint": "eslint . --ext .ts,.tsx --fix",
     "prebuild": "rimraf dist",
     "build": "tsc",
-    "test": "jest"
+    "test": "jest",
+    "dev": "ts-node src/index.ts"
   },
   "repository": {
     "type": "git",
