@@ -1,28 +1,39 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { FPParser, Numeric, Precision } from './types'
-import { FP, parsePrecision } from './parsers'
 import { abs, max, min, toPrecision } from './math'
+import * as util from 'node:util'
 
-export type PrecisionResolution = 'left' | 'right' | 'min' | 'max'
+export enum Decimals {
+  left = 'left',
+  right = 'right',
+  min = 'min',
+  max = 'max',
+  add = 'add',
+  sub = 'sub'
+}
+
+export type PrecisionResolution = Decimals | number | bigint
 
 const pickPrecision = (
   aPrecision: bigint,
   bPrecision: bigint,
   precisionResolution: PrecisionResolution,
-  resultPrecision?: Precision,
 ): bigint => {
-  if (typeof resultPrecision !== 'undefined') {
-    return parsePrecision(resultPrecision)
+  if (typeof precisionResolution !== 'string') {
+    return BigInt(precisionResolution)
   }
   switch (precisionResolution) {
-    case 'left':
+    case Decimals.left:
       return aPrecision
-    case 'right':
+    case Decimals.right:
       return bPrecision
-    case 'min':
+    case Decimals.min:
       return min(aPrecision, bPrecision)
-    case 'max':
+    case Decimals.max:
       return max(aPrecision, bPrecision)
+    case Decimals.add:
+      return aPrecision + bPrecision
+    case Decimals.sub:
+      return max(aPrecision, bPrecision) - min(aPrecision, bPrecision)
   }
 }
 
@@ -31,10 +42,6 @@ export class FixedPoint {
   readonly #base: bigint
 
   readonly #precision: bigint
-
-  protected readonly precisionResolution: PrecisionResolution = 'left'
-
-  protected readonly parser: FPParser = FP
 
   constructor(base: bigint, precision: bigint) {
     this.#base = base
@@ -49,104 +56,100 @@ export class FixedPoint {
     return this.#precision
   }
 
-  add(arg: FixedPoint | Numeric, resultPrecision?: Precision): this {
-    const parsedArg = this.parser(arg)
+  add(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
-    const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return new (this.constructor as any)(aBase + bBase, newPrecision)
+    const bPrecision = arg.precision
+    const calcPrecision = pickPrecision(aPrecision, bPrecision, Decimals.max)
+    const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.left)
+    const aBase = toPrecision(this.base, calcPrecision, aPrecision)
+    const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
+    return new FixedPoint(aBase + bBase, calcPrecision).toPrecision(targetPrecision)
   }
 
-  sub(arg: FixedPoint | Numeric, resultPrecision?: Precision): this {
-    const parsedArg = this.parser(arg)
+  sub(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
-    const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return new (this.constructor as any)(aBase - bBase, newPrecision)
+    const bPrecision = arg.precision
+    const calcPrecision = pickPrecision(aPrecision, bPrecision, Decimals.max)
+    const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.left)
+    const aBase = toPrecision(this.base, calcPrecision, aPrecision)
+    const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
+    return new FixedPoint(aBase - bBase, calcPrecision).toPrecision(targetPrecision)
   }
 
-  mul(arg: FixedPoint | Numeric, resultPrecision?: Precision): this {
-    const parsedArg = this.parser(arg)
+  mul(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
+    const bPrecision = arg.precision
+    const calcPrecision = pickPrecision(aPrecision, bPrecision, aPrecision + bPrecision)
+    const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
     const aBase = this.base
-    const bBase = parsedArg.base
-    const newBase = toPrecision(aBase * bBase, newPrecision, aPrecision + bPrecision)
-    return new (this.constructor as any)(newBase, newPrecision)
+    const bBase = arg.base
+    const newBase = toPrecision(aBase * bBase, calcPrecision, aPrecision + bPrecision)
+    return new FixedPoint(newBase, calcPrecision).toPrecision(targetPrecision)
   }
 
-  div(arg: FixedPoint | Numeric, resultPrecision?: Precision): this {
-    const parsedArg = this.parser(arg)
+  div(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
+    const bPrecision = arg.precision
+    const calcPrecision = pickPrecision(aPrecision, bPrecision, aPrecision + bPrecision)
+    const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
     const aBase = this.base
-    const bBase = parsedArg.base
-    const newBase = toPrecision(aBase, aPrecision + bPrecision, aPrecision) / bBase
-    return new (this.constructor as any)(toPrecision(newBase, newPrecision, aPrecision), newPrecision)
+    const bBase = arg.base
+    const newBase = toPrecision(aBase, calcPrecision, aPrecision) / bBase
+    return new FixedPoint(toPrecision(newBase, calcPrecision, aPrecision), calcPrecision).toPrecision(targetPrecision)
   }
 
-  eq(arg: FixedPoint | Numeric, resultPrecision?: Precision): boolean {
-    const parsedArg = this.parser(arg)
+  cmp(arg: FixedPoint, comparator: (a: bigint, b: bigint) => boolean): boolean {
     const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
+    const bPrecision = arg.precision
+    const newPrecision = max(aPrecision, bPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return aBase === bBase
+    const bBase = toPrecision(arg.base, newPrecision, bPrecision)
+    return comparator(aBase, bBase)
   }
 
-  gt(arg: FixedPoint | Numeric, resultPrecision?: Precision): boolean {
-    const parsedArg = this.parser(arg)
-    const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
-    const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return aBase > bBase
+  eq(arg: FixedPoint): boolean {
+    return this.cmp(arg, (a, b) => a === b)
   }
 
-  lt(arg: FixedPoint | Numeric, resultPrecision?: Precision): boolean {
-    const parsedArg = this.parser(arg)
-    const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
-    const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return aBase < bBase
+  gt(arg: FixedPoint): boolean {
+    return this.cmp(arg, (a, b) => a > b)
   }
 
-  gte(arg: FixedPoint | Numeric, resultPrecision?: Precision): boolean {
-    const parsedArg = this.parser(arg)
-    const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
-    const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return aBase >= bBase
+  lt(arg: FixedPoint): boolean {
+    return this.cmp(arg, (a, b) => a < b)
   }
 
-  lte(arg: FixedPoint | Numeric, resultPrecision?: Precision): boolean {
-    const parsedArg = this.parser(arg)
-    const aPrecision = this.precision
-    const bPrecision = parsedArg.precision
-    const newPrecision = pickPrecision(aPrecision, bPrecision, this.precisionResolution, resultPrecision)
-    const aBase = toPrecision(this.base, newPrecision, aPrecision)
-    const bBase = toPrecision(parsedArg.base, newPrecision, bPrecision)
-    return aBase <= bBase
+  gte(arg: FixedPoint): boolean {
+    return this.cmp(arg, (a, b) => a >= b)
   }
 
-  neg(): this {
-    return new (this.constructor as any)(-this.base, this.precision)
+  lte(arg: FixedPoint): boolean {
+    return this.cmp(arg, (a, b) => a <= b)
   }
 
-  abs(): this {
-    return new (this.constructor as any)(abs(this.base), this.precision)
+  neg(): FixedPoint {
+    return new FixedPoint(-this.base, this.precision)
+  }
+
+  abs(): FixedPoint {
+    return new FixedPoint(abs(this.base), this.precision)
+  }
+
+  isZero(): boolean {
+    return this.base === 0n
+  }
+
+  isPositive(): boolean {
+    return this.base > 0n
+  }
+
+  isNegative(): boolean {
+    return this.base < 0n
+  }
+
+  toPrecision(resultPrecision: number | bigint): FixedPoint {
+    const newPrecision = BigInt(resultPrecision)
+    return new FixedPoint(toPrecision(this.base, newPrecision, this.precision), newPrecision)
   }
 
   toString() {
@@ -158,7 +161,11 @@ export class FixedPoint {
   }
 
   toDecimalString() {
-    const str = this.base.toString().padStart(Number(this.precision) + 1, '0')
+    const isNegative = this.isNegative()
+    let str = abs(this.base).toString().padStart(Number(this.precision) + 1, '0')
+    if (isNegative) {
+      str = `-${str}`
+    }
     if (this.precision === 0n) {
       return str
     }
@@ -176,5 +183,9 @@ export class FixedPoint {
   * [Symbol.iterator]() {
     yield this.base
     yield this.precision
+  }
+
+  [util.inspect.custom]() {
+    return `FixedPoint { base: ${this.base}, precision: ${this.precision}, decimal: ${this.toDecimalString()} }`
   }
 }

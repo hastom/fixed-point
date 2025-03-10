@@ -1,52 +1,73 @@
-import { Base, FPParser, Numeric, Precision } from './types'
+import { FixedPoint } from './FixedPoint'
 import { toPrecision } from './math'
 
-import { FixedPoint } from './FixedPoint'
+const pow10 = (base: bigint, exp: bigint) => base * (10n ** exp)
 
-export const parsePrecision = (precision: Precision): bigint => {
-  return BigInt(precision)
-}
-
-const parseDecimalString = (decimal: string): [bigint, bigint] => {
-  const [i, d = ''] = decimal.split('.')
-  const p = BigInt(d.length)
-  return [BigInt(i) * (10n ** p) + BigInt(d), p]
-}
-
-const parseBase = (base: Base): [bigint, bigint] => {
-  const baseString = base.toString()
-  if (baseString.includes('e')) {
-    const [i, pow] = baseString.split('e')
-    const [b, p] = parseDecimalString(i)
-    if (pow.startsWith('-')) {
-      return [b, p + BigInt(-Number(pow))]
-    } else {
-      return [b * (10n ** (BigInt(Number(pow)) - p)), 0n]
-    }
-  } else if (baseString.includes('.')) {
-    return parseDecimalString(baseString)
+const numberToDecimalString = (src: number, precision: number): string => {
+  if (!Number.isFinite(src)) {
+    throw Error('Invalid number')
+  }
+  let result: string
+  if (Math.log10(src) <= 6) {
+    result = src.toLocaleString('en', { minimumFractionDigits: precision, useGrouping: false })
+  } else if (src - Math.trunc(src) === 0) {
+    result = src.toLocaleString('en', { maximumFractionDigits: 0, useGrouping: false })
   } else {
-    return [BigInt(baseString), 0n]
+    throw Error('Not enough precision for a number value. Use string value instead')
   }
+  return result
 }
 
-export const parseNumeric = (numeric: Numeric, defaultPrecision?: Precision): [bigint, bigint] => {
-  if (defaultPrecision && !Array.isArray(numeric)) {
-    numeric = [numeric, defaultPrecision]
+export const fpFromDecimal = (src: number | string | bigint, dstPrecision: number): FixedPoint => {
+  const _dstPrecision = BigInt(dstPrecision)
+  if (typeof src === 'bigint') {
+    return new FixedPoint(pow10(src, _dstPrecision), _dstPrecision)
   }
-  if (Array.isArray(numeric)) {
-    const [base, precision] = parseBase(numeric[0])
-    return [toPrecision(base, BigInt(numeric[1]), precision), BigInt(numeric[1])]
-  } else {
-    return parseBase(numeric)
+  let decimalString = typeof src === 'number' ? numberToDecimalString(src, dstPrecision) : src
+
+  // Check sign
+  let isNegative = false
+  while (decimalString.startsWith('-')) {
+    isNegative = !isNegative
+    decimalString = decimalString.slice(1)
   }
+
+  // Split string
+  if (decimalString === '.') {
+    throw Error('Invalid number')
+  }
+  const parts = decimalString.split('.')
+  if (parts.length > 2) {
+    throw Error('Invalid number')
+  }
+
+  // Prepare parts
+  let whole = parts[0]
+  let frac = parts[1]
+  if (!whole) {
+    whole = '0'
+  }
+  if (!frac) {
+    frac = '0'
+  }
+  if (frac.length > dstPrecision) {
+    throw Error('Invalid number')
+  }
+  while (frac.length < dstPrecision) {
+    frac += '0'
+  }
+
+  // Convert
+  let base = pow10(BigInt(whole), _dstPrecision) + BigInt(frac)
+  if (isNegative) {
+    base = -base
+  }
+
+  return new FixedPoint(base, _dstPrecision)
 }
 
-export const FP: FPParser = <T extends typeof FixedPoint = typeof FixedPoint>(
-  numeric: FixedPoint | Numeric, defaultPrecision?: Precision,
-): FixedPoint => {
-  if (numeric instanceof FixedPoint) {
-    return numeric as InstanceType<T>
-  }
-  return new FixedPoint(...parseNumeric(numeric, defaultPrecision))
+export const fpFromInt = (src: number | string | bigint, srcPrecision: number, dstPrecision: number): FixedPoint => {
+  const _srcPrecision = BigInt(srcPrecision)
+  const _dstPrecision = BigInt(dstPrecision)
+  return new FixedPoint(toPrecision(BigInt(src), _dstPrecision, _srcPrecision), _dstPrecision)
 }
