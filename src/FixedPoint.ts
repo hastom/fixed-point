@@ -39,6 +39,26 @@ const pickPrecision = (
 
 export class FixedPoint {
 
+  static min(arg0: FixedPoint, ...args: FixedPoint[]): FixedPoint {
+    let min = arg0
+    for (const arg of args) {
+      if (arg.lt(min)) {
+        min = arg
+      }
+    }
+    return min
+  }
+
+  static max(arg0: FixedPoint, ...args: FixedPoint[]): FixedPoint {
+    let max = arg0
+    for (const arg of args) {
+      if (arg.gt(max)) {
+        max = arg
+      }
+    }
+    return max
+  }
+
   readonly #base: bigint
 
   readonly #precision: bigint
