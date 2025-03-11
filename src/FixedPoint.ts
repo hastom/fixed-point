@@ -1,6 +1,66 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { abs, max, min, toPrecision } from './math'
-import * as util from 'node:util'
+
+export enum Rounding {
+  /**
+   * Rounds away from zero
+   * Example: 1.5 -> 2, -1.5 -> -2
+   */
+  ROUND_UP,
+
+  /**
+   * Rounds towards zero
+   * Example: 1.5 -> 1, -1.5 -> -1
+   */
+  ROUND_DOWN,
+
+  /**
+   * Rounds towards Infinity
+   * Example: 1.5 -> 2, -1.5 -> -1
+   */
+  ROUND_CEIL,
+
+  /**
+   * Rounds towards -Infinity
+   * Example: 1.5 -> 1, -1.5 -> -2
+   */
+  ROUND_FLOOR,
+
+  /**
+   * Rounds towards nearest neighbour.
+   * If equidistant, rounds away from zero
+   * Example: 1.5 -> 2, -1.5 -> -2
+   */
+  ROUND_HALF_UP,
+
+  /**
+   * Rounds towards nearest neighbour.
+   * If equidistant, rounds towards zero
+   * Example: 1.5 -> 1, -1.5 -> -1
+   */
+  ROUND_HALF_DOWN,
+
+  /**
+   * Rounds towards nearest neighbour.
+   * If equidistant, rounds towards even neighbour
+   * Example: 1.5 -> 2, 2.5 -> 2
+   */
+  ROUND_HALF_EVEN,
+
+  /**
+   * Rounds towards nearest neighbour.
+   * If equidistant, rounds towards Infinity
+   * Example: 1.5 -> 2, -1.5 -> -1
+   */
+  ROUND_HALF_CEIL,
+
+  /**
+   * Rounds towards nearest neighbour.
+   * If equidistant, rounds towards -Infinity
+   * Example: 1.5 -> 1, -1.5 -> -2
+   */
+  ROUND_HALF_FLOOR
+}
 
 export enum Decimals {
   left = 'left',
@@ -167,6 +227,114 @@ export class FixedPoint {
     return this.base < 0n
   }
 
+  floor() {
+    return this.round(Rounding.ROUND_FLOOR)
+  }
+
+  ceil() {
+    return this.round(Rounding.ROUND_CEIL)
+  }
+
+  round(mode: Rounding = Rounding.ROUND_HALF_UP): FixedPoint {
+    // No rounding needed for zero precision
+    if (this.precision === 0n) {
+      return new FixedPoint(this.base, this.precision)
+    }
+
+    const isNegative = this.isNegative()
+    const absBase = abs(this.base)
+
+    const divisor = 10n ** this.precision
+
+    const integerPart = absBase / divisor
+    const fractionalPart = absBase % divisor
+
+    const isHalfwayCase = fractionalPart * 2n === divisor
+
+    let rounded = integerPart
+
+    switch (mode) {
+      case Rounding.ROUND_UP: // Away from zero
+        // Round up if there's any fractional part
+        if (fractionalPart > 0n) {
+          rounded = integerPart + 1n
+        }
+        break
+
+      case Rounding.ROUND_DOWN: // Towards zero
+        // Keep the integer part (truncate)
+        rounded = integerPart
+        break
+
+      case Rounding.ROUND_CEIL: // Towards Infinity
+        if (fractionalPart > 0n) {
+          if (!isNegative) {
+            rounded = integerPart + 1n
+          } else {
+            rounded = integerPart
+          }
+        }
+        break
+
+      case Rounding.ROUND_FLOOR: // Towards -Infinity
+        if (fractionalPart > 0n) {
+          if (!isNegative) {
+            rounded = integerPart
+          } else {
+            rounded = integerPart + 1n
+          }
+        }
+        break
+
+      case Rounding.ROUND_HALF_UP: // If halfway, away from zero
+        if (fractionalPart > divisor / 2n || (isHalfwayCase)) {
+          rounded = integerPart + 1n
+        }
+        break
+
+      case Rounding.ROUND_HALF_DOWN: // If halfway, towards zero
+        if (fractionalPart > divisor / 2n) {
+          rounded = integerPart + 1n
+        }
+        break
+
+      case Rounding.ROUND_HALF_EVEN: // If halfway, towards even neighbor
+        if (fractionalPart > divisor / 2n) {
+          rounded = integerPart + 1n
+        } else if (isHalfwayCase) {
+          // If integerPart is even, keep it; if odd, round up
+          if (integerPart % 2n === 1n) {
+            rounded = integerPart + 1n
+          }
+        }
+        break
+
+      case Rounding.ROUND_HALF_CEIL: // If halfway, towards Infinity
+        if (fractionalPart > divisor / 2n) {
+          rounded = integerPart + 1n
+        } else if (isHalfwayCase) {
+          if (!isNegative) {
+            rounded = integerPart + 1n
+          }
+        }
+        break
+
+      case Rounding.ROUND_HALF_FLOOR: // If halfway, towards -Infinity
+        if (fractionalPart > divisor / 2n) {
+          rounded = integerPart + 1n
+        } else if (isHalfwayCase) {
+          if (isNegative) {
+            rounded = integerPart + 1n
+          }
+        }
+        break
+    }
+
+    // Apply sign and create new FixedPoint instance with the same precision
+    const roundedBase = isNegative ? -rounded * divisor : rounded * divisor
+    return new FixedPoint(roundedBase, this.precision)
+  }
+
   toPrecision(resultPrecision: number | bigint): FixedPoint {
     const newPrecision = BigInt(resultPrecision)
     return new FixedPoint(toPrecision(this.base, newPrecision, this.precision), newPrecision)
@@ -198,14 +366,5 @@ export class FixedPoint {
 
   valueOf() {
     return this.toDecimal()
-  }
-
-  * [Symbol.iterator]() {
-    yield this.base
-    yield this.precision
-  }
-
-  [util.inspect.custom]() {
-    return `FixedPoint { base: ${this.base}, precision: ${this.precision}, decimal: ${this.toDecimalString()} }`
   }
 }

@@ -1,4 +1,4 @@
-import { Decimals, FixedPoint } from './FixedPoint'
+import { Decimals, FixedPoint, Rounding } from './FixedPoint'
 import { fpFromDecimal, fpFromInt } from './parsers'
 
 describe('fixed-point', () => {
@@ -396,16 +396,319 @@ describe('fixed-point', () => {
 
   })
 
+  describe('round()', () => {
+    // ROUND_UP tests
+    it('must round up positive numbers', () => {
+      const a = fpFromDecimal('2.4', 2)
+      const result = a.round(Rounding.ROUND_UP)
+      expect(result.toDecimalString()).toBe('3.00')
+
+      const b = fpFromDecimal('2.5', 2)
+      const resultB = b.round(Rounding.ROUND_UP)
+      expect(resultB.toDecimalString()).toBe('3.00')
+
+      const c = fpFromDecimal('2.1', 2)
+      const resultC = c.round(Rounding.ROUND_UP)
+      expect(resultC.toDecimalString()).toBe('3.00')
+    })
+
+    it('must round up negative numbers', () => {
+      const a = fpFromDecimal('-2.4', 2)
+      const result = a.round(Rounding.ROUND_UP)
+      expect(result.toDecimalString()).toBe('-3.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_UP)
+      expect(resultB.toDecimalString()).toBe('-3.00')
+
+      const c = fpFromDecimal('-2.1', 2)
+      const resultC = c.round(Rounding.ROUND_UP)
+      expect(resultC.toDecimalString()).toBe('-3.00')
+    })
+
+    // ROUND_DOWN tests
+    it('must round down positive numbers', () => {
+      const a = fpFromDecimal('2.4', 2)
+      const result = a.round(Rounding.ROUND_DOWN)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.5', 2)
+      const resultB = b.round(Rounding.ROUND_DOWN)
+      expect(resultB.toDecimalString()).toBe('2.00')
+
+      const c = fpFromDecimal('2.9', 2)
+      const resultC = c.round(Rounding.ROUND_DOWN)
+      expect(resultC.toDecimalString()).toBe('2.00')
+    })
+
+    it('must round down negative numbers', () => {
+      const a = fpFromDecimal('-2.4', 2)
+      const result = a.round(Rounding.ROUND_DOWN)
+      expect(result.toDecimalString()).toBe('-2.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_DOWN)
+      expect(resultB.toDecimalString()).toBe('-2.00')
+
+      const c = fpFromDecimal('-2.9', 2)
+      const resultC = c.round(Rounding.ROUND_DOWN)
+      expect(resultC.toDecimalString()).toBe('-2.00')
+    })
+
+    // ROUND_CEIL tests
+    it('must round ceiling positive numbers', () => {
+      const a = fpFromDecimal('2.4', 2)
+      const result = a.round(Rounding.ROUND_CEIL)
+      expect(result.toDecimalString()).toBe('3.00')
+
+      const b = fpFromDecimal('2.5', 2)
+      const resultB = b.round(Rounding.ROUND_CEIL)
+      expect(resultB.toDecimalString()).toBe('3.00')
+
+      const c = fpFromDecimal('2.0', 2)
+      const resultC = c.round(Rounding.ROUND_CEIL)
+      expect(resultC.toDecimalString()).toBe('2.00')
+    })
+
+    it('must round ceiling negative numbers', () => {
+      const a = fpFromDecimal('-2.4', 2)
+      const result = a.round(Rounding.ROUND_CEIL)
+      expect(result.toDecimalString()).toBe('-2.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_CEIL)
+      expect(resultB.toDecimalString()).toBe('-2.00')
+
+      const c = fpFromDecimal('-3.0', 2)
+      const resultC = c.round(Rounding.ROUND_CEIL)
+      expect(resultC.toDecimalString()).toBe('-3.00')
+    })
+
+    // ROUND_FLOOR tests
+    it('must round floor positive numbers', () => {
+      const a = fpFromDecimal('2.4', 2)
+      const result = a.round(Rounding.ROUND_FLOOR)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.5', 2)
+      const resultB = b.round(Rounding.ROUND_FLOOR)
+      expect(resultB.toDecimalString()).toBe('2.00')
+
+      const c = fpFromDecimal('3.0', 2)
+      const resultC = c.round(Rounding.ROUND_FLOOR)
+      expect(resultC.toDecimalString()).toBe('3.00')
+    })
+
+    it('must round floor negative numbers', () => {
+      const a = fpFromDecimal('-2.4', 2)
+      const result = a.round(Rounding.ROUND_FLOOR)
+      expect(result.toDecimalString()).toBe('-3.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_FLOOR)
+      expect(resultB.toDecimalString()).toBe('-3.00')
+
+      const c = fpFromDecimal('-2.0', 2)
+      const resultC = c.round(Rounding.ROUND_FLOOR)
+      expect(resultC.toDecimalString()).toBe('-2.00')
+    })
+
+    // ROUND_HALF_UP tests
+    it('must round half up with exact .5 cases', () => {
+      const a = fpFromDecimal('2.5', 2)
+      const result = a.round(Rounding.ROUND_HALF_UP)
+      expect(result.toDecimalString()).toBe('3.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_UP)
+      expect(resultB.toDecimalString()).toBe('-3.00')
+    })
+
+    it('must round half up with close to .5 cases', () => {
+      const a = fpFromDecimal('2.49', 2)
+      const result = a.round(Rounding.ROUND_HALF_UP)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.51', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_UP)
+      expect(resultB.toDecimalString()).toBe('3.00')
+
+      const c = fpFromDecimal('-2.49', 2)
+      const resultC = c.round(Rounding.ROUND_HALF_UP)
+      expect(resultC.toDecimalString()).toBe('-2.00')
+
+      const d = fpFromDecimal('-2.51', 2)
+      const resultD = d.round(Rounding.ROUND_HALF_UP)
+      expect(resultD.toDecimalString()).toBe('-3.00')
+    })
+
+    // ROUND_HALF_DOWN tests
+    it('must round half down with exact .5 cases', () => {
+      const a = fpFromDecimal('2.5', 2)
+      const result = a.round(Rounding.ROUND_HALF_DOWN)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_DOWN)
+      expect(resultB.toDecimalString()).toBe('-2.00')
+    })
+
+    it('must round half down with close to .5 cases', () => {
+      const a = fpFromDecimal('2.49', 2)
+      const result = a.round(Rounding.ROUND_HALF_DOWN)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.51', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_DOWN)
+      expect(resultB.toDecimalString()).toBe('3.00')
+
+      const c = fpFromDecimal('-2.49', 2)
+      const resultC = c.round(Rounding.ROUND_HALF_DOWN)
+      expect(resultC.toDecimalString()).toBe('-2.00')
+
+      const d = fpFromDecimal('-2.51', 2)
+      const resultD = d.round(Rounding.ROUND_HALF_DOWN)
+      expect(resultD.toDecimalString()).toBe('-3.00')
+    })
+
+    // ROUND_HALF_EVEN tests
+    it('must round half even with even neighbors', () => {
+      const a = fpFromDecimal('2.5', 2)
+      const result = a.round(Rounding.ROUND_HALF_EVEN)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_EVEN)
+      expect(resultB.toDecimalString()).toBe('-2.00')
+    })
+
+    it('must round half even with odd neighbors', () => {
+      const a = fpFromDecimal('3.5', 2)
+      const result = a.round(Rounding.ROUND_HALF_EVEN)
+      expect(result.toDecimalString()).toBe('4.00')
+
+      const b = fpFromDecimal('-3.5', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_EVEN)
+      expect(resultB.toDecimalString()).toBe('-4.00')
+    })
+
+    it('must round half even with close to .5 cases', () => {
+      const a = fpFromDecimal('2.49', 2)
+      const result = a.round(Rounding.ROUND_HALF_EVEN)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.51', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_EVEN)
+      expect(resultB.toDecimalString()).toBe('3.00')
+    })
+
+    // ROUND_HALF_CEIL tests
+    it('must round half ceil with exact .5 cases', () => {
+      const a = fpFromDecimal('2.5', 2)
+      const result = a.round(Rounding.ROUND_HALF_CEIL)
+      expect(result.toDecimalString()).toBe('3.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_CEIL)
+      expect(resultB.toDecimalString()).toBe('-2.00')
+    })
+
+    it('must round half ceil with close to .5 cases', () => {
+      const a = fpFromDecimal('2.49', 2)
+      const result = a.round(Rounding.ROUND_HALF_CEIL)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.51', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_CEIL)
+      expect(resultB.toDecimalString()).toBe('3.00')
+
+      const c = fpFromDecimal('-2.49', 2)
+      const resultC = c.round(Rounding.ROUND_HALF_CEIL)
+      expect(resultC.toDecimalString()).toBe('-2.00')
+
+      const d = fpFromDecimal('-2.51', 2)
+      const resultD = d.round(Rounding.ROUND_HALF_CEIL)
+      expect(resultD.toDecimalString()).toBe('-3.00')
+    })
+
+    // ROUND_HALF_FLOOR tests
+    it('must round half floor with exact .5 cases', () => {
+      const a = fpFromDecimal('2.5', 2)
+      const result = a.round(Rounding.ROUND_HALF_FLOOR)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('-2.5', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_FLOOR)
+      expect(resultB.toDecimalString()).toBe('-3.00')
+    })
+
+    it('must round half floor with close to .5 cases', () => {
+      const a = fpFromDecimal('2.49', 2)
+      const result = a.round(Rounding.ROUND_HALF_FLOOR)
+      expect(result.toDecimalString()).toBe('2.00')
+
+      const b = fpFromDecimal('2.51', 2)
+      const resultB = b.round(Rounding.ROUND_HALF_FLOOR)
+      expect(resultB.toDecimalString()).toBe('3.00')
+
+      const c = fpFromDecimal('-2.49', 2)
+      const resultC = c.round(Rounding.ROUND_HALF_FLOOR)
+      expect(resultC.toDecimalString()).toBe('-2.00')
+
+      const d = fpFromDecimal('-2.51', 2)
+      const resultD = d.round(Rounding.ROUND_HALF_FLOOR)
+      expect(resultD.toDecimalString()).toBe('-3.00')
+    })
+
+    // Edge cases
+    it('must handle zero correctly across all rounding modes', () => {
+      const zero = fpFromDecimal('0.0', 2)
+
+      expect(zero.round(Rounding.ROUND_UP).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_DOWN).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_CEIL).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_FLOOR).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_HALF_UP).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_HALF_DOWN).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_HALF_EVEN).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_HALF_EVEN).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_HALF_CEIL).toDecimalString()).toBe('0.00')
+      expect(zero.round(Rounding.ROUND_HALF_FLOOR).toDecimalString()).toBe('0.00')
+    })
+
+    // Higher precision numbers test
+    it('must handle higher precision numbers correctly', () => {
+      const highPrecision = fpFromDecimal('3.141592', 6)
+
+      // Round to integer
+      expect(highPrecision.round(Rounding.ROUND_UP).toDecimalString()).toBe('4.000000')
+      expect(highPrecision.round(Rounding.ROUND_DOWN).toDecimalString()).toBe('3.000000')
+      expect(highPrecision.round(Rounding.ROUND_CEIL).toDecimalString()).toBe('4.000000')
+      expect(highPrecision.round(Rounding.ROUND_FLOOR).toDecimalString()).toBe('3.000000')
+      expect(highPrecision.round(Rounding.ROUND_HALF_UP).toDecimalString()).toBe('3.000000')
+      expect(highPrecision.round(Rounding.ROUND_HALF_DOWN).toDecimalString()).toBe('3.000000')
+      expect(highPrecision.round(Rounding.ROUND_HALF_EVEN).toDecimalString()).toBe('3.000000')
+      expect(highPrecision.round(Rounding.ROUND_HALF_CEIL).toDecimalString()).toBe('3.000000')
+      expect(highPrecision.round(Rounding.ROUND_HALF_FLOOR).toDecimalString()).toBe('3.000000')
+
+      // Test a value with exact .5 in higher precision
+      const halfPrecision = fpFromDecimal('3.500000', 6)
+      expect(halfPrecision.round(Rounding.ROUND_HALF_UP).toDecimalString()).toBe('4.000000')
+      expect(halfPrecision.round(Rounding.ROUND_HALF_DOWN).toDecimalString()).toBe('3.000000')
+      expect(halfPrecision.round(Rounding.ROUND_HALF_EVEN).toDecimalString()).toBe('4.000000')
+      expect(halfPrecision.round(Rounding.ROUND_HALF_CEIL).toDecimalString()).toBe('4.000000')
+      expect(halfPrecision.round(Rounding.ROUND_HALF_FLOOR).toDecimalString()).toBe('3.000000')
+    })
+    const a = fpFromDecimal('1.22', 9)
+    const b = fpFromDecimal('1.22', 9)
+    const c = a.add(b)
+    expect(c.precision).toBe(9n)
+    expect(c.base).toBe(2_440_000_000n)
+    expect(c.toDecimalString()).toBe('2.440000000')
+  })
+
   describe('math', () => {
     describe('+', () => {
-      it('must add (p1 = p2)', () => {
-        const a = fpFromDecimal('1.22', 9)
-        const b = fpFromDecimal('1.22', 9)
-        const c = a.add(b)
-        expect(c.precision).toBe(9n)
-        expect(c.base).toBe(2_440_000_000n)
-        expect(c.toDecimalString()).toBe('2.440000000')
-      })
       it('must add (p1 > p2)', () => {
         const a = fpFromDecimal('1.22', 9)
         const b = fpFromDecimal('1.22', 6)
@@ -760,5 +1063,4 @@ describe('fixed-point', () => {
       })
     })
   })
-
 })
