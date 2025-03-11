@@ -335,9 +335,14 @@ export class FixedPoint {
     return new FixedPoint(roundedBase, this.precision)
   }
 
-  toPrecision(resultPrecision: number | bigint): FixedPoint {
+  toPrecision(resultPrecision: number | bigint, rounding: Rounding = Rounding.ROUND_DOWN): FixedPoint {
     const newPrecision = BigInt(resultPrecision)
-    return new FixedPoint(toPrecision(this.base, newPrecision, this.precision), newPrecision)
+    if (newPrecision < this.precision) {
+      const rounded = new FixedPoint(this.base, this.precision - newPrecision).round(rounding)
+      return new FixedPoint(toPrecision(rounded.base, newPrecision, this.precision), newPrecision)
+    } else {
+      return new FixedPoint(toPrecision(this.base, newPrecision, this.precision), newPrecision)
+    }
   }
 
   toString() {

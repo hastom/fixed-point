@@ -396,7 +396,7 @@ describe('fixed-point', () => {
 
   })
 
-  describe('round()', () => {
+  describe('round', () => {
     // ROUND_UP tests
     it('must round up positive numbers', () => {
       const a = fpFromDecimal('2.4', 2)
@@ -705,6 +705,34 @@ describe('fixed-point', () => {
     expect(c.precision).toBe(9n)
     expect(c.base).toBe(2_440_000_000n)
     expect(c.toDecimalString()).toBe('2.440000000')
+  })
+
+  describe('convert precision', () => {
+    it('must set precision higher', () => {
+      const a = fpFromDecimal('1.22', 2)
+      const b = a.toPrecision(9)
+      expect(b.toDecimalString()).toBe('1.220000000')
+    })
+    it('must set precision lower rounding down', () => {
+      const a = fpFromDecimal('1.23456789', 8)
+      const b = a.toPrecision(2)
+      expect(b.toDecimalString()).toBe('1.23')
+    })
+    it('must set precision lower rounding up > 1', () => {
+      const a = fpFromDecimal('1.23456789', 8)
+      const b = a.toPrecision(2, Rounding.ROUND_UP)
+      expect(b.toDecimalString()).toBe('1.24')
+    })
+    it('must set precision lower rounding down < 1', () => {
+      const a = fpFromDecimal('0.23456789', 8)
+      const b = a.toPrecision(0)
+      expect(b.toDecimalString()).toBe('0')
+    })
+    it('must set precision lower rounding up < 1', () => {
+      const a = fpFromDecimal('0.23456789', 8)
+      const b = a.toPrecision(0, Rounding.ROUND_UP)
+      expect(b.toDecimalString()).toBe('1')
+    })
   })
 
   describe('math', () => {
