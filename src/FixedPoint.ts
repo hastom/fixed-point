@@ -145,6 +145,7 @@ export class FixedPoint {
     const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
     return new FixedPoint(aBase + bBase, calcPrecision).toPrecision(targetPrecision)
   }
+  plus = this.add
 
   sub(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
@@ -155,6 +156,7 @@ export class FixedPoint {
     const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
     return new FixedPoint(aBase - bBase, calcPrecision).toPrecision(targetPrecision)
   }
+  minus = this.sub
 
   mul(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
@@ -166,6 +168,8 @@ export class FixedPoint {
     const newBase = toPrecision(aBase * bBase, calcPrecision, aPrecision + bPrecision)
     return new FixedPoint(newBase, calcPrecision).toPrecision(targetPrecision)
   }
+  times = this.mul
+  multipliedBy = this.mul
 
   div(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
@@ -177,6 +181,7 @@ export class FixedPoint {
     const newBase = toPrecision(aBase, calcPrecision, aPrecision) / bBase
     return new FixedPoint(toPrecision(newBase, calcPrecision, aPrecision), calcPrecision).toPrecision(targetPrecision)
   }
+  dividedBy = this.div
 
   cmp(arg: FixedPoint, comparator: (a: bigint, b: bigint) => boolean): boolean {
     const aPrecision = this.precision
@@ -190,30 +195,37 @@ export class FixedPoint {
   eq(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a === b)
   }
+  isEqualTo = this.eq
 
   gt(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a > b)
   }
+  isGreaterThan = this.gt
 
   lt(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a < b)
   }
+  isLessThan = this.lt
 
   gte(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a >= b)
   }
+  isGreaterThanOrEqualTo = this.gte
 
   lte(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a <= b)
   }
+  isLessThanOrEqualTo = this.lte
 
   neg(): FixedPoint {
     return new FixedPoint(-this.base, this.precision)
   }
+  negated = this.neg
 
   abs(): FixedPoint {
     return new FixedPoint(abs(this.base), this.precision)
   }
+  absoluteValue = this.abs
 
   isZero(): boolean {
     return this.base === 0n
