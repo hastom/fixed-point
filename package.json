@@ -1,6 +1,6 @@
 {
   "name": "@hastom/fixed-point",
-  "version": "4.2.1",
+  "version": "4.2.2",
   "description": "Light lib for fixed point math made around native bigint",
   "private": false,
   "main": "dist/index.js",
