@@ -119,68 +119,79 @@ export class FixedPoint {
     return max
   }
 
-  readonly #base: bigint
+  private _base: bigint
 
-  readonly #precision: bigint
+  private _precision: bigint
 
   constructor(base: bigint, precision: bigint) {
-    this.#base = base
-    this.#precision = precision
+    this._base = base
+    this._precision = precision
   }
 
   get base() {
-    return this.#base
+    return this._base
   }
 
   get precision() {
-    return this.#precision
+    return this._precision
   }
 
   add(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const calcPrecision = pickPrecision(aPrecision, bPrecision, Decimals.max)
+    const calcPrecision = max(aPrecision, bPrecision)
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.left)
     const aBase = toPrecision(this.base, calcPrecision, aPrecision)
     const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
-    return new FixedPoint(aBase + bBase, calcPrecision).toPrecision(targetPrecision)
+    const result = new FixedPoint(aBase + bBase, calcPrecision)
+    result.setPrecision(targetPrecision)
+    return result
   }
+
   plus = this.add
 
   sub(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const calcPrecision = pickPrecision(aPrecision, bPrecision, Decimals.max)
+    const calcPrecision = max(aPrecision, bPrecision)
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.left)
     const aBase = toPrecision(this.base, calcPrecision, aPrecision)
     const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
-    return new FixedPoint(aBase - bBase, calcPrecision).toPrecision(targetPrecision)
+    const result = new FixedPoint(aBase - bBase, calcPrecision)
+    result.setPrecision(targetPrecision)
+    return result
   }
+
   minus = this.sub
 
   mul(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const calcPrecision = pickPrecision(aPrecision, bPrecision, aPrecision + bPrecision)
+    const calcPrecision = aPrecision + bPrecision
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
     const aBase = this.base
     const bBase = arg.base
-    const newBase = toPrecision(aBase * bBase, calcPrecision, aPrecision + bPrecision)
-    return new FixedPoint(newBase, calcPrecision).toPrecision(targetPrecision)
+    const result = new FixedPoint(aBase * bBase, calcPrecision)
+    result.setPrecision(targetPrecision)
+    return result
   }
+
   times = this.mul
   multipliedBy = this.mul
 
   div(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const calcPrecision = pickPrecision(aPrecision, bPrecision, aPrecision + bPrecision)
+    const calcPrecision = aPrecision + bPrecision
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
     const aBase = this.base
     const bBase = arg.base
     const newBase = toPrecision(aBase, calcPrecision, aPrecision) / bBase
-    return new FixedPoint(toPrecision(newBase, calcPrecision, aPrecision), calcPrecision).toPrecision(targetPrecision)
+    const result = new FixedPoint(toPrecision(newBase, calcPrecision, aPrecision), calcPrecision)
+    result.setPrecision(targetPrecision)
+    return result
   }
+
   dividedBy = this.div
 
   cmp(arg: FixedPoint, comparator: (a: bigint, b: bigint) => boolean): boolean {
@@ -195,36 +206,43 @@ export class FixedPoint {
   eq(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a === b)
   }
+
   isEqualTo = this.eq
 
   gt(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a > b)
   }
+
   isGreaterThan = this.gt
 
   lt(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a < b)
   }
+
   isLessThan = this.lt
 
   gte(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a >= b)
   }
+
   isGreaterThanOrEqualTo = this.gte
 
   lte(arg: FixedPoint): boolean {
     return this.cmp(arg, (a, b) => a <= b)
   }
+
   isLessThanOrEqualTo = this.lte
 
   neg(): FixedPoint {
     return new FixedPoint(-this.base, this.precision)
   }
+
   negated = this.neg
 
   abs(): FixedPoint {
     return new FixedPoint(abs(this.base), this.precision)
   }
+
   absoluteValue = this.abs
 
   isZero(): boolean {
@@ -345,6 +363,17 @@ export class FixedPoint {
     // Apply sign and create new FixedPoint instance with the same precision
     const roundedBase = isNegative ? -rounded * divisor : rounded * divisor
     return new FixedPoint(roundedBase, this.precision)
+  }
+
+  setPrecision(newPrecision: bigint, rounding: Rounding = Rounding.ROUND_DOWN): void {
+    if (newPrecision < this.precision) {
+      const rounded = new FixedPoint(this.base, this.precision - newPrecision).round(rounding)
+      this._base = toPrecision(rounded.base, newPrecision, this.precision)
+      this._precision = newPrecision
+    } else if (newPrecision > this.precision) {
+      this._base = toPrecision(this.base, newPrecision, this.precision)
+      this._precision = newPrecision
+    }
   }
 
   toPrecision(resultPrecision: number | bigint, rounding: Rounding = Rounding.ROUND_DOWN): FixedPoint {
