@@ -167,6 +167,36 @@ const result = a.abs();
 console.log(result.toDecimalString()); // '10.5'
 ```
 
+##### `sqrt(): FixedPoint`
+
+Calculates the square root of the fixed-point number using the Newton-Raphson method.
+
+```typescript
+// Perfect squares
+const a = fpFromDecimal('25', 18);
+const result = a.sqrt();
+console.log(result.toDecimalString()); // '5.000000000000000000'
+
+// Non-perfect squares
+const b = fpFromDecimal('2', 18);
+const result2 = b.sqrt();
+console.log(result2.toDecimalString()); // '1.414213562373095049'
+
+// Decimal numbers
+const c = fpFromDecimal('0.25', 18);
+const result3 = c.sqrt();
+console.log(result3.toDecimalString()); // '0.500000000000000000'
+
+// Error handling - negative numbers throw an error
+const d = fpFromDecimal('-1', 18);
+try {
+  d.sqrt(); // Throws: 'Cannot calculate square root of negative number'
+} catch (error) {
+  console.error(error.message);
+}
+```
+
+**Note**: The `sqrt()` method preserves the precision of the original number and uses higher working precision internally for accurate calculations. There's also a `squareRoot()` alias available.
 
 #### Comparison Operations
 

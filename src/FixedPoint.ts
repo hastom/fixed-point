@@ -245,6 +245,50 @@ export class FixedPoint {
 
   absoluteValue = this.abs
 
+  sqrt(): FixedPoint {
+    if (this.isNegative()) {
+      throw new Error('Cannot calculate square root of negative number')
+    }
+
+    if (this.isZero()) {
+      return new FixedPoint(0n, this.precision)
+    }
+
+    // For Newton-Raphson method, we need higher precision for intermediate calculations
+    const workingPrecision = this.precision + 10n
+    const workingThis = new FixedPoint(toPrecision(this.base, workingPrecision, this.precision), workingPrecision)
+
+    // Initial guess: use the number shifted right by half the precision
+    // This gives us a reasonable starting point for the Newton-Raphson method
+    let x = new FixedPoint(workingThis.base >> (workingPrecision / 2n), workingPrecision)
+
+    // Handle case where initial guess is zero (for very small numbers)
+    if (x.isZero()) {
+      x = new FixedPoint(10n ** (workingPrecision / 2n), workingPrecision)
+    }
+
+    const two = new FixedPoint(2n * (10n ** workingPrecision), workingPrecision)
+    const epsilon = new FixedPoint(1n, workingPrecision) // Minimum precision unit
+
+    // Newton-Raphson iteration: x_{n+1} = (x_n + a/x_n) / 2
+    for (let i = 0; i < 50; i++) { // Maximum 50 iterations to prevent infinite loops
+      const quotient = workingThis.div(x, workingPrecision)
+      const newX = x.add(quotient, workingPrecision).div(two, workingPrecision)
+
+      // Check for convergence
+      if (newX.sub(x, workingPrecision).abs().lte(epsilon)) {
+        break
+      }
+
+      x = newX
+    }
+
+    // Convert back to original precision
+    return x.toPrecision(this.precision)
+  }
+
+  squareRoot = this.sqrt
+
   isZero(): boolean {
     return this.base === 0n
   }

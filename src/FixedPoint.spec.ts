@@ -1091,4 +1091,169 @@ describe('fixed-point', () => {
       })
     })
   })
+
+  describe('sqrt', () => {
+    it('must calculate square root of perfect squares', () => {
+      // sqrt(25) = 5
+      const d = fpFromDecimal('25', 6)
+      const resultD = d.sqrt()
+      expect(resultD.toDecimalString()).toBe('5.000000')
+    })
+
+    it('must calculate square root of non-perfect squares', () => {
+      // sqrt(2) ≈ 1.414213
+      const a = fpFromDecimal('2', 6)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('1.414213')
+
+      // sqrt(3) ≈ 1.732050
+      const b = fpFromDecimal('3', 6)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('1.732050')
+
+      // sqrt(5) ≈ 2.236067
+      const c = fpFromDecimal('5', 6)
+      const resultC = c.sqrt()
+      expect(resultC.toDecimalString()).toBe('2.236067')
+
+      // sqrt(10) ≈ 3.162277
+      const d = fpFromDecimal('10', 6)
+      const resultD = d.sqrt()
+      expect(resultD.toDecimalString()).toBe('3.162277')
+    })
+
+    it('must calculate square root of decimal numbers', () => {
+      // sqrt(0.25) = 0.5
+      const a = fpFromDecimal('0.25', 6)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('0.500000')
+
+      // sqrt(0.5) ≈ 0.707106
+      const b = fpFromDecimal('0.5', 6)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('0.707106')
+
+      // sqrt(1.44) = 1.2
+      const c = fpFromDecimal('1.44', 6)
+      const resultC = c.sqrt()
+      expect(resultC.toDecimalString()).toBe('1.200000')
+
+      // sqrt(2.25) = 1.5
+      const d = fpFromDecimal('2.25', 6)
+      const resultD = d.sqrt()
+      expect(resultD.toDecimalString()).toBe('1.500000')
+    })
+
+    it('must calculate square root of very small numbers', () => {
+      // sqrt(0.000001) = 0.001
+      const a = fpFromDecimal('0.000001', 6)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('0.001000')
+
+      // sqrt(0.000004) = 0.002
+      const b = fpFromDecimal('0.000004', 6)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('0.002000')
+
+      // sqrt(0.000009) = 0.003
+      const c = fpFromDecimal('0.000009', 6)
+      const resultC = c.sqrt()
+      expect(resultC.toDecimalString()).toBe('0.003000')
+    })
+
+    it('must calculate square root of very large numbers', () => {
+      // sqrt(100) = 10
+      const a = fpFromDecimal('100', 6)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('10.000000')
+
+      // sqrt(10000) = 100
+      const b = fpFromDecimal('10000', 6)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('100.000000')
+
+      // sqrt(1000000) = 1000
+      const c = fpFromDecimal('1000000', 6)
+      const resultC = c.sqrt()
+      expect(resultC.toDecimalString()).toBe('1000.000000')
+    })
+
+    it('must calculate square root of 1', () => {
+      // sqrt(1) = 1
+      const a = fpFromDecimal('1', 6)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('1.000000')
+
+      // Test with different precision
+      const b = fpFromDecimal('1', 9)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('1.000000000')
+    })
+
+    it('must calculate square root of 0', () => {
+      // sqrt(0) = 0
+      const a = fpFromDecimal('0', 6)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('0.000000')
+
+      // Test with different precision
+      const b = fpFromDecimal('0', 9)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('0.000000000')
+    })
+
+    it('must throw error for negative numbers', () => {
+      const a = fpFromDecimal('-1', 6)
+      expect(() => a.sqrt()).toThrow('Cannot calculate square root of negative number')
+
+      const b = fpFromDecimal('-0.5', 6)
+      expect(() => b.sqrt()).toThrow('Cannot calculate square root of negative number')
+
+      const c = fpFromDecimal('-100', 6)
+      expect(() => c.sqrt()).toThrow('Cannot calculate square root of negative number')
+    })
+
+    it('must work with different precisions', () => {
+      // Test with precision 2
+      const a = fpFromDecimal('2', 2)
+      const result = a.sqrt()
+      expect(result.toDecimalString()).toBe('1.41')
+
+      // Test with precision 3
+      const b = fpFromDecimal('2', 3)
+      const resultB = b.sqrt()
+      expect(resultB.toDecimalString()).toBe('1.414')
+
+      // Test with precision 9
+      const c = fpFromDecimal('2', 9)
+      const resultC = c.sqrt()
+      expect(resultC.toDecimalString()).toBe('1.414213562')
+    })
+
+    it('must have squareRoot alias', () => {
+      const a = fpFromDecimal('4', 6)
+      const result1 = a.sqrt()
+      const result2 = a.squareRoot()
+      expect(result1.toDecimalString()).toBe(result2.toDecimalString())
+      expect(result1.toDecimalString()).toBe('2.000000')
+    })
+
+    it('must preserve precision of original number', () => {
+      const a = fpFromDecimal('9', 6)
+      const result = a.sqrt()
+      expect(result.precision).toBe(6n)
+
+      const b = fpFromDecimal('9', 9)
+      const resultB = b.sqrt()
+      expect(resultB.precision).toBe(9n)
+    })
+
+    it('must handle edge cases with high precision', () => {
+      // Test a number that requires multiple Newton-Raphson iterations
+      const a = fpFromDecimal('123.456789', 9)
+      const result = a.sqrt()
+      // sqrt(123.456789) ≈ 11.111111060
+      expect(result.toDecimalString()).toBe('11.111111060')
+    })
+  })
 })
