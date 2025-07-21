@@ -306,12 +306,125 @@ const a = fpFromDecimal('-10.5', 18);
 console.log(a.isNegative()); // true
 ```
 
-##### `toPrecision(precision: number): FixedPoint`
+##### `toPrecision(precision: number, rounding?: Rounding): FixedPoint`
 
-Converts the fixed-point number to a different precision.
+Converts the fixed-point number to a different precision, returning a new FixedPoint instance.
 
 ```typescript
-const a = fpFromDecimal('10.5', 18);
-const result = a.toPrecision(10);
-console.log(result.toDecimalString()); // '10.5000000000' (but with 10 digits of precision)
+import { Rounding } from '@hastom/fixed-point';
+
+const a = fpFromDecimal('10.54321', 18);
+const result = a.toPrecision(2); // Default rounding is ROUND_DOWN
+console.log(result.toDecimalString()); // '10.54'
+
+// With explicit rounding mode
+const rounded = a.toPrecision(2, Rounding.ROUND_HALF_UP);
+console.log(rounded.toDecimalString()); // '10.54'
+
+// Increase precision (no rounding needed)
+const expanded = a.toPrecision(20);
+console.log(expanded.toDecimalString()); // '10.54321000000000000000'
 ```
+
+##### `setPrecision(precision: number, rounding?: Rounding): void`
+
+Modifies the precision of the current FixedPoint instance in place.
+
+```typescript
+import { Rounding } from '@hastom/fixed-point';
+
+const a = fpFromDecimal('10.987654', 18);
+console.log(a.toDecimalString()); // '10.987654000000000000'
+
+// Reduce precision with default rounding (ROUND_DOWN)
+a.setPrecision(3);
+console.log(a.toDecimalString()); // '10.987'
+
+// Create another instance to show different rounding
+const b = fpFromDecimal('10.987654', 18);
+b.setPrecision(3, Rounding.ROUND_HALF_UP);
+console.log(b.toDecimalString()); // '10.988'
+
+// Increase precision
+b.setPrecision(10);
+console.log(b.toDecimalString()); // '10.9880000000'
+```
+
+##### `round(mode?: Rounding): FixedPoint`
+
+Rounds the fixed-point number to the nearest integer using the specified rounding mode.
+
+```typescript
+import { Rounding } from '@hastom/fixed-point';
+
+const a = fpFromDecimal('10.7', 18);
+const b = fpFromDecimal('-10.7', 18);
+const c = fpFromDecimal('10.5', 18);
+const d = fpFromDecimal('-10.5', 18);
+
+// ROUND_UP - Away from zero
+console.log(a.round(Rounding.ROUND_UP).toDecimalString()); // '11.000000000000000000'
+console.log(b.round(Rounding.ROUND_UP).toDecimalString()); // '-11.000000000000000000'
+
+// ROUND_DOWN - Towards zero (default)
+console.log(a.round(Rounding.ROUND_DOWN).toDecimalString()); // '10.000000000000000000'
+console.log(b.round(Rounding.ROUND_DOWN).toDecimalString()); // '-10.000000000000000000'
+
+// ROUND_CEIL - Towards positive infinity
+console.log(a.round(Rounding.ROUND_CEIL).toDecimalString()); // '11.000000000000000000'
+console.log(b.round(Rounding.ROUND_CEIL).toDecimalString()); // '-10.000000000000000000'
+
+// ROUND_FLOOR - Towards negative infinity
+console.log(a.round(Rounding.ROUND_FLOOR).toDecimalString()); // '10.000000000000000000'
+console.log(b.round(Rounding.ROUND_FLOOR).toDecimalString()); // '-11.000000000000000000'
+
+// ROUND_HALF_UP - If halfway (.5), rounds away from zero
+console.log(c.round(Rounding.ROUND_HALF_UP).toDecimalString()); // '11.000000000000000000'
+console.log(d.round(Rounding.ROUND_HALF_UP).toDecimalString()); // '-11.000000000000000000'
+
+// ROUND_HALF_DOWN - If halfway (.5), rounds towards zero
+console.log(c.round(Rounding.ROUND_HALF_DOWN).toDecimalString()); // '10.000000000000000000'
+console.log(d.round(Rounding.ROUND_HALF_DOWN).toDecimalString()); // '-10.000000000000000000'
+
+// ROUND_HALF_EVEN - If halfway (.5), rounds to even neighbor (banker's rounding)
+const e = fpFromDecimal('2.5', 18);
+const f = fpFromDecimal('3.5', 18);
+console.log(e.round(Rounding.ROUND_HALF_EVEN).toDecimalString()); // '2.000000000000000000'
+console.log(f.round(Rounding.ROUND_HALF_EVEN).toDecimalString()); // '4.000000000000000000'
+```
+
+##### `floor(): FixedPoint`
+
+Rounds down to the nearest integer (shorthand for `round(Rounding.ROUND_FLOOR)`).
+
+```typescript
+const a = fpFromDecimal('10.7', 18);
+const b = fpFromDecimal('-10.3', 18);
+console.log(a.floor().toDecimalString()); // '10.000000000000000000'
+console.log(b.floor().toDecimalString()); // '-11.000000000000000000'
+```
+
+##### `ceil(): FixedPoint`
+
+Rounds up to the nearest integer (shorthand for `round(Rounding.ROUND_CEIL)`).
+
+```typescript
+const a = fpFromDecimal('10.3', 18);
+const b = fpFromDecimal('-10.7', 18);
+console.log(a.ceil().toDecimalString()); // '11.000000000000000000'
+console.log(b.ceil().toDecimalString()); // '-10.000000000000000000'
+```
+
+#### Rounding Modes
+
+The library supports various rounding modes through the `Rounding` enum:
+
+- **`ROUND_UP`**: Rounds away from zero
+- **`ROUND_DOWN`**: Rounds towards zero (truncation)
+- **`ROUND_CEIL`**: Rounds towards positive infinity
+- **`ROUND_FLOOR`**: Rounds towards negative infinity
+- **`ROUND_HALF_UP`**: Rounds to nearest neighbor, halfway cases away from zero
+- **`ROUND_HALF_DOWN`**: Rounds to nearest neighbor, halfway cases towards zero
+- **`ROUND_HALF_EVEN`**: Rounds to nearest neighbor, halfway cases to even neighbor (banker's rounding)
+- **`ROUND_HALF_CEIL`**: Rounds to nearest neighbor, halfway cases towards positive infinity
+- **`ROUND_HALF_FLOOR`**: Rounds to nearest neighbor, halfway cases towards negative infinity
