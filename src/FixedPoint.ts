@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { abs, max, min, toPrecision } from './math'
+import { abs, max2, min2, pow10, toPrecision } from './math'
 
 export enum Rounding {
   /**
@@ -87,13 +87,13 @@ const pickPrecision = (
     case Decimals.right:
       return bPrecision
     case Decimals.min:
-      return min(aPrecision, bPrecision)
+      return min2(aPrecision, bPrecision)
     case Decimals.max:
-      return max(aPrecision, bPrecision)
+      return max2(aPrecision, bPrecision)
     case Decimals.add:
       return aPrecision + bPrecision
     case Decimals.sub:
-      return max(aPrecision, bPrecision) - min(aPrecision, bPrecision)
+      return max2(aPrecision, bPrecision) - min2(aPrecision, bPrecision)
   }
 }
 
@@ -139,7 +139,7 @@ export class FixedPoint {
   add(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const calcPrecision = max(aPrecision, bPrecision)
+    const calcPrecision = max2(aPrecision, bPrecision)
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.left)
     const aBase = toPrecision(this.base, calcPrecision, aPrecision)
     const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
@@ -153,7 +153,7 @@ export class FixedPoint {
   sub(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const calcPrecision = max(aPrecision, bPrecision)
+    const calcPrecision = max2(aPrecision, bPrecision)
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.left)
     const aBase = toPrecision(this.base, calcPrecision, aPrecision)
     const bBase = toPrecision(arg.base, calcPrecision, bPrecision)
@@ -197,7 +197,7 @@ export class FixedPoint {
   cmp(arg: FixedPoint, comparator: (a: bigint, b: bigint) => boolean): boolean {
     const aPrecision = this.precision
     const bPrecision = arg.precision
-    const newPrecision = max(aPrecision, bPrecision)
+    const newPrecision = max2(aPrecision, bPrecision)
     const aBase = toPrecision(this.base, newPrecision, aPrecision)
     const bBase = toPrecision(arg.base, newPrecision, bPrecision)
     return comparator(aBase, bBase)
@@ -318,7 +318,7 @@ export class FixedPoint {
     const isNegative = this.isNegative()
     const absBase = abs(this.base)
 
-    const divisor = 10n ** this.precision
+    const divisor = pow10(this.precision)
 
     const integerPart = absBase / divisor
     const fractionalPart = absBase % divisor
@@ -411,9 +411,18 @@ export class FixedPoint {
 
   setPrecision(newPrecision: bigint, rounding: Rounding = Rounding.ROUND_DOWN): void {
     if (newPrecision < this.precision) {
-      const rounded = new FixedPoint(this.base, this.precision - newPrecision).round(rounding)
-      this._base = toPrecision(rounded.base, newPrecision, this.precision)
-      this._precision = newPrecision
+      if (rounding === Rounding.ROUND_DOWN) {
+        // Fast path: ROUND_DOWN is just truncation — no need for full round()
+        const scale = pow10(this.precision - newPrecision)
+        // BigInt division truncates towards zero, which is ROUND_DOWN semantics
+        this._base = (this._base / scale) * scale
+        this._base = toPrecision(this._base, newPrecision, this._precision)
+        this._precision = newPrecision
+      } else {
+        const rounded = new FixedPoint(this.base, this.precision - newPrecision).round(rounding)
+        this._base = toPrecision(rounded.base, newPrecision, this.precision)
+        this._precision = newPrecision
+      }
     } else if (newPrecision > this.precision) {
       this._base = toPrecision(this.base, newPrecision, this.precision)
       this._precision = newPrecision
