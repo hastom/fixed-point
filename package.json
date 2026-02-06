@@ -12,7 +12,7 @@
     "build": "tsc",
     "test": "jest",
     "dev": "ts-node src/index.ts",
-    "bench": "ts-node benchmarks/run.ts"
+    "bench": "npm run build && node benchmarks/run.js"
   },
   "repository": {
     "type": "git",
