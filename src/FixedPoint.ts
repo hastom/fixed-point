@@ -129,6 +129,9 @@ export class FixedPoint {
   }
 
   add(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
+    if (resultPrecision === undefined && this.precision === arg.precision) {
+      return new FixedPoint(this.base + arg.base, this.precision)
+    }
     const aPrecision = this.precision
     const bPrecision = arg.precision
     const calcPrecision = max2(aPrecision, bPrecision)
@@ -139,6 +142,9 @@ export class FixedPoint {
   }
 
   sub(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
+    if (resultPrecision === undefined && this.precision === arg.precision) {
+      return new FixedPoint(this.base - arg.base, this.precision)
+    }
     const aPrecision = this.precision
     const bPrecision = arg.precision
     const calcPrecision = max2(aPrecision, bPrecision)
@@ -149,6 +155,9 @@ export class FixedPoint {
   }
 
   mul(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
+    if (resultPrecision === undefined && this.precision === arg.precision) {
+      return new FixedPoint((this.base * arg.base) / pow10(this.precision), this.precision)
+    }
     const aPrecision = this.precision
     const bPrecision = arg.precision
     const calcPrecision = aPrecision + bPrecision
@@ -158,6 +167,9 @@ export class FixedPoint {
   }
 
   div(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
+    if (resultPrecision === undefined && this.precision === arg.precision) {
+      return new FixedPoint((this.base * pow10(this.precision)) / arg.base, this.precision)
+    }
     const aPrecision = this.precision
     const bPrecision = arg.precision
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
@@ -176,22 +188,27 @@ export class FixedPoint {
   }
 
   eq(arg: FixedPoint): boolean {
+    if (this.precision === arg.precision) {return this.base === arg.base}
     return this.cmp(arg, (a, b) => a === b)
   }
 
   gt(arg: FixedPoint): boolean {
+    if (this.precision === arg.precision) {return this.base > arg.base}
     return this.cmp(arg, (a, b) => a > b)
   }
 
   lt(arg: FixedPoint): boolean {
+    if (this.precision === arg.precision) {return this.base < arg.base}
     return this.cmp(arg, (a, b) => a < b)
   }
 
   gte(arg: FixedPoint): boolean {
+    if (this.precision === arg.precision) {return this.base >= arg.base}
     return this.cmp(arg, (a, b) => a >= b)
   }
 
   lte(arg: FixedPoint): boolean {
+    if (this.precision === arg.precision) {return this.base <= arg.base}
     return this.cmp(arg, (a, b) => a <= b)
   }
 

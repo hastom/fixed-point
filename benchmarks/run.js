@@ -29,11 +29,20 @@ const bnNeg = new BigNumber('-42.123456789012345678')
 const bnSqrt = new BigNumber('2.000000000000000000')
 
 // Plain BigInt values (scaled by 10^18 to represent the same decimals)
-const biA = 12345678901234567890n // 12345.678901234567890 * 10^18
-const biB = 9876543210987654321n // 9876.543210987654321 * 10^18
-const biSmall = 1n
-const biLarge = 999999999999999999999999999999999999n
-const biNeg = -42123456789012345678n
+// Wrapped in objects to prevent V8 constant-folding, which would make
+// the BigInt baseline unfairly fast vs any library that reads from objects.
+const bi = {
+  a: 12345678901234567890n, // 12345.678901234567890 * 10^18
+  b: 9876543210987654321n, // 9876.543210987654321 * 10^18
+  small: 1n,
+  large: 999999999999999999999999999999999999n,
+  neg: -42123456789012345678n,
+}
+
+// Sink to prevent V8 dead-code elimination — all benchmark results must be
+// assigned here so the engine can't optimise away side-effect-free expressions.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let sink
 
 // ─── Suite runner ──────────────────────────────────────────────────────────────
 
@@ -50,13 +59,13 @@ function makeSuite(name, setup) {
 makeSuite('Creation from decimal string', (suite) => {
   suite
     .add('FixedPoint  fpFromDecimal(str)', () => {
-      fpFromDecimal('12345.678901234567890', 18)
+      sink = fpFromDecimal('12345.678901234567890', 18)
     })
     .add('BigNumber   new BigNumber(str)', () => {
-      new BigNumber('12345.678901234567890000')
+      sink = new BigNumber('12345.678901234567890000')
     })
     .add('BigInt      BigInt(str)', () => {
-      BigInt('12345678901234567890')
+      sink = BigInt('12345678901234567890')
     })
 })
 
@@ -65,13 +74,13 @@ makeSuite('Creation from decimal string', (suite) => {
 makeSuite('Addition', (suite) => {
   suite
     .add('FixedPoint  a.add(b)', () => {
-      fpA.add(fpB)
+      sink = fpA.add(fpB)
     })
     .add('BigNumber   a.plus(b)', () => {
-      bnA.plus(bnB)
+      sink = bnA.plus(bnB)
     })
     .add('BigInt      a + b', () => {
-      biA + biB
+      sink = bi.a + bi.b
     })
 })
 
@@ -80,13 +89,13 @@ makeSuite('Addition', (suite) => {
 makeSuite('Subtraction', (suite) => {
   suite
     .add('FixedPoint  a.sub(b)', () => {
-      fpA.sub(fpB)
+      sink = fpA.sub(fpB)
     })
     .add('BigNumber   a.minus(b)', () => {
-      bnA.minus(bnB)
+      sink = bnA.minus(bnB)
     })
     .add('BigInt      a - b', () => {
-      biA - biB
+      sink = bi.a - bi.b
     })
 })
 
@@ -95,13 +104,13 @@ makeSuite('Subtraction', (suite) => {
 makeSuite('Multiplication', (suite) => {
   suite
     .add('FixedPoint  a.mul(b)', () => {
-      fpA.mul(fpB)
+      sink = fpA.mul(fpB)
     })
     .add('BigNumber   a.times(b)', () => {
-      bnA.times(bnB)
+      sink = bnA.times(bnB)
     })
     .add('BigInt      a * b / SCALE', () => {
-      ;(biA * biB) / SCALE
+      sink = (bi.a * bi.b) / SCALE
     })
 })
 
@@ -110,13 +119,13 @@ makeSuite('Multiplication', (suite) => {
 makeSuite('Division', (suite) => {
   suite
     .add('FixedPoint  a.div(b)', () => {
-      fpA.div(fpB)
+      sink = fpA.div(fpB)
     })
     .add('BigNumber   a.div(b)', () => {
-      bnA.div(bnB)
+      sink = bnA.div(bnB)
     })
     .add('BigInt      (a * SCALE) / b', () => {
-      ;(biA * SCALE) / biB
+      sink = (bi.a * SCALE) / bi.b
     })
 })
 
@@ -125,13 +134,13 @@ makeSuite('Division', (suite) => {
 makeSuite('Comparison (eq)', (suite) => {
   suite
     .add('FixedPoint  a.eq(b)', () => {
-      fpA.eq(fpB)
+      sink = fpA.eq(fpB)
     })
     .add('BigNumber   a.eq(b)', () => {
-      bnA.eq(bnB)
+      sink = bnA.eq(bnB)
     })
     .add('BigInt      a === b', () => {
-      biA === biB
+      sink = bi.a === bi.b
     })
 })
 
@@ -140,13 +149,13 @@ makeSuite('Comparison (eq)', (suite) => {
 makeSuite('Comparison (gt)', (suite) => {
   suite
     .add('FixedPoint  a.gt(b)', () => {
-      fpA.gt(fpB)
+      sink = fpA.gt(fpB)
     })
     .add('BigNumber   a.gt(b)', () => {
-      bnA.gt(bnB)
+      sink = bnA.gt(bnB)
     })
     .add('BigInt      a > b', () => {
-      biA > biB
+      sink = bi.a > bi.b
     })
 })
 
@@ -155,13 +164,13 @@ makeSuite('Comparison (gt)', (suite) => {
 makeSuite('Comparison (lt)', (suite) => {
   suite
     .add('FixedPoint  a.lt(b)', () => {
-      fpA.lt(fpB)
+      sink = fpA.lt(fpB)
     })
     .add('BigNumber   a.lt(b)', () => {
-      bnA.lt(bnB)
+      sink = bnA.lt(bnB)
     })
     .add('BigInt      a < b', () => {
-      biA < biB
+      sink = bi.a < bi.b
     })
 })
 
@@ -170,13 +179,13 @@ makeSuite('Comparison (lt)', (suite) => {
 makeSuite('Comparison (gte)', (suite) => {
   suite
     .add('FixedPoint  a.gte(b)', () => {
-      fpA.gte(fpB)
+      sink = fpA.gte(fpB)
     })
     .add('BigNumber   a.gte(b)', () => {
-      bnA.gte(bnB)
+      sink = bnA.gte(bnB)
     })
     .add('BigInt      a >= b', () => {
-      biA >= biB
+      sink = bi.a >= bi.b
     })
 })
 
@@ -185,13 +194,13 @@ makeSuite('Comparison (gte)', (suite) => {
 makeSuite('Negation', (suite) => {
   suite
     .add('FixedPoint  a.neg()', () => {
-      fpA.neg()
+      sink = fpA.neg()
     })
     .add('BigNumber   a.negated()', () => {
-      bnA.negated()
+      sink = bnA.negated()
     })
     .add('BigInt      -a', () => {
-      -biA
+      sink = -bi.a
     })
 })
 
@@ -200,13 +209,13 @@ makeSuite('Negation', (suite) => {
 makeSuite('Absolute value', (suite) => {
   suite
     .add('FixedPoint  a.abs()', () => {
-      fpNeg.abs()
+      sink = fpNeg.abs()
     })
     .add('BigNumber   a.abs()', () => {
-      bnNeg.abs()
+      sink = bnNeg.abs()
     })
     .add('BigInt      manual abs', () => {
-      biNeg < 0n ? -biNeg : biNeg
+      sink = bi.neg < 0n ? -bi.neg : bi.neg
     })
 })
 
@@ -215,10 +224,10 @@ makeSuite('Absolute value', (suite) => {
 makeSuite('Square root', (suite) => {
   suite
     .add('FixedPoint  a.sqrt()', () => {
-      fpSqrt.sqrt()
+      sink = fpSqrt.sqrt()
     })
     .add('BigNumber   a.sqrt()', () => {
-      bnSqrt.sqrt()
+      sink = bnSqrt.sqrt()
     })
     // BigInt has no native sqrt — skip
 })
@@ -228,30 +237,30 @@ makeSuite('Square root', (suite) => {
 makeSuite('Rounding (half-up)', (suite) => {
   suite
     .add('FixedPoint  a.round(ROUND_HALF_UP)', () => {
-      fpA.round(Rounding.ROUND_HALF_UP)
+      sink = fpA.round(Rounding.ROUND_HALF_UP)
     })
     .add('BigNumber   a.integerValue(ROUND_HALF_UP)', () => {
-      bnA.integerValue(BigNumber.ROUND_HALF_UP)
+      sink = bnA.integerValue(BigNumber.ROUND_HALF_UP)
     })
 })
 
 makeSuite('Rounding (floor)', (suite) => {
   suite
     .add('FixedPoint  a.floor()', () => {
-      fpA.floor()
+      sink = fpA.floor()
     })
     .add('BigNumber   a.integerValue(ROUND_FLOOR)', () => {
-      bnA.integerValue(BigNumber.ROUND_FLOOR)
+      sink = bnA.integerValue(BigNumber.ROUND_FLOOR)
     })
 })
 
 makeSuite('Rounding (ceil)', (suite) => {
   suite
     .add('FixedPoint  a.ceil()', () => {
-      fpA.ceil()
+      sink = fpA.ceil()
     })
     .add('BigNumber   a.integerValue(ROUND_CEIL)', () => {
-      bnA.integerValue(BigNumber.ROUND_CEIL)
+      sink = bnA.integerValue(BigNumber.ROUND_CEIL)
     })
 })
 
@@ -260,13 +269,13 @@ makeSuite('Rounding (ceil)', (suite) => {
 makeSuite('Precision change (18 → 6)', (suite) => {
   suite
     .add('FixedPoint  a.toPrecision(6)', () => {
-      fpA.toPrecision(6)
+      sink = fpA.toPrecision(6)
     })
     .add('BigNumber   a.dp(6)', () => {
-      bnA.dp(6)
+      sink = bnA.dp(6)
     })
     .add('BigInt      a / 10^12', () => {
-      biA / (10n ** 12n)
+      sink = bi.a / (10n ** 12n)
     })
 })
 
@@ -275,14 +284,14 @@ makeSuite('Precision change (18 → 6)', (suite) => {
 makeSuite('To decimal string', (suite) => {
   suite
     .add('FixedPoint  a.toDecimalString()', () => {
-      fpA.toDecimalString()
+      sink = fpA.toDecimalString()
     })
     .add('BigNumber   a.toFixed(18)', () => {
-      bnA.toFixed(18)
+      sink = bnA.toFixed(18)
     })
     .add('BigInt      manual format', () => {
-      const s = biA.toString()
-      s.slice(0, -18) + '.' + s.slice(-18)
+      const s = bi.a.toString()
+      sink = s.slice(0, -18) + '.' + s.slice(-18)
     })
 })
 
@@ -291,19 +300,13 @@ makeSuite('To decimal string', (suite) => {
 makeSuite('Predicates (isZero, isPositive, isNegative)', (suite) => {
   suite
     .add('FixedPoint  isZero+isPositive+isNegative', () => {
-      fpA.isZero()
-      fpA.isPositive()
-      fpA.isNegative()
+      sink = fpA.isZero(); sink = fpA.isPositive(); sink = fpA.isNegative()
     })
     .add('BigNumber   isZero+isPositive+isNegative', () => {
-      bnA.isZero()
-      bnA.isPositive()
-      bnA.isNegative()
+      sink = bnA.isZero(); sink = bnA.isPositive(); sink = bnA.isNegative()
     })
     .add('BigInt      === 0n, > 0n, < 0n', () => {
-      biA === 0n
-      biA > 0n
-      biA < 0n
+      sink = bi.a === 0n; sink = bi.a > 0n; sink = bi.a < 0n
     })
 })
 
@@ -317,13 +320,13 @@ const bnB18 = new BigNumber('9876.543210987654321000')
 makeSuite('Addition (mixed precision: 6 + 18)', (suite) => {
   suite
     .add('FixedPoint  a6.add(b18)', () => {
-      fpA6.add(fpB18)
+      sink = fpA6.add(fpB18)
     })
     .add('BigNumber   a6.plus(b18)', () => {
-      bnA6.plus(bnB18)
+      sink = bnA6.plus(bnB18)
     })
     .add('BigInt      manual scale + add', () => {
-      ;(biA * (10n ** 12n)) + biB
+      sink = (bi.a * (10n ** 12n)) + bi.b
     })
 })
 
@@ -332,26 +335,26 @@ makeSuite('Addition (mixed precision: 6 + 18)', (suite) => {
 makeSuite('Large number multiplication', (suite) => {
   suite
     .add('FixedPoint  large.mul(large)', () => {
-      fpLarge.mul(fpLarge)
+      sink = fpLarge.mul(fpLarge)
     })
     .add('BigNumber   large.times(large)', () => {
-      bnLarge.times(bnLarge)
+      sink = bnLarge.times(bnLarge)
     })
     .add('BigInt      large * large / SCALE', () => {
-      ;(biLarge * biLarge) / SCALE
+      sink = (bi.large * bi.large) / SCALE
     })
 })
 
 makeSuite('Large number division', (suite) => {
   suite
     .add('FixedPoint  large.div(a)', () => {
-      fpLarge.div(fpA)
+      sink = fpLarge.div(fpA)
     })
     .add('BigNumber   large.div(a)', () => {
-      bnLarge.div(bnA)
+      sink = bnLarge.div(bnA)
     })
     .add('BigInt      (large * SCALE) / a', () => {
-      ;(biLarge * SCALE) / biA
+      sink = (bi.large * SCALE) / bi.a
     })
 })
 
@@ -360,13 +363,13 @@ makeSuite('Large number division', (suite) => {
 makeSuite('Chained: (a + b) * a - b', (suite) => {
   suite
     .add('FixedPoint', () => {
-      fpA.add(fpB).mul(fpA).sub(fpB)
+      sink = fpA.add(fpB).mul(fpA).sub(fpB)
     })
     .add('BigNumber', () => {
-      bnA.plus(bnB).times(bnA).minus(bnB)
+      sink = bnA.plus(bnB).times(bnA).minus(bnB)
     })
     .add('BigInt', () => {
-      ;(((biA + biB) * biA) / SCALE) - biB
+      sink = (((bi.a + bi.b) * bi.a) / SCALE) - bi.b
     })
 })
 
@@ -375,17 +378,17 @@ makeSuite('Chained: (a + b) * a - b', (suite) => {
 makeSuite('Static min / max', (suite) => {
   suite
     .add('FixedPoint  min + max', () => {
-      FixedPoint.min(fpA, fpB, fpSmall, fpLarge, fpNeg)
-      FixedPoint.max(fpA, fpB, fpSmall, fpLarge, fpNeg)
+      sink = FixedPoint.min(fpA, fpB, fpSmall, fpLarge, fpNeg)
+      sink = FixedPoint.max(fpA, fpB, fpSmall, fpLarge, fpNeg)
     })
     .add('BigNumber   min + max', () => {
-      BigNumber.min(bnA, bnB, bnSmall, bnLarge, bnNeg)
-      BigNumber.max(bnA, bnB, bnSmall, bnLarge, bnNeg)
+      sink = BigNumber.min(bnA, bnB, bnSmall, bnLarge, bnNeg)
+      sink = BigNumber.max(bnA, bnB, bnSmall, bnLarge, bnNeg)
     })
     .add('BigInt      manual min + max', () => {
-      const vals = [biA, biB, biSmall, biLarge, biNeg]
-      vals.reduce((m, e) => (e < m ? e : m))
-      vals.reduce((m, e) => (e > m ? e : m))
+      const vals = [bi.a, bi.b, bi.small, bi.large, bi.neg]
+      sink = vals.reduce((m, e) => (e < m ? e : m))
+      sink = vals.reduce((m, e) => (e > m ? e : m))
     })
 })
 
