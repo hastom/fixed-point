@@ -2,6 +2,66 @@
 
 A high-precision fixed-point math library for JavaScript and TypeScript, built around native `bigint` for maximum performance and precision.
 
+## Benchmarks
+
+All benchmarks use 18-decimal precision and are run with Node.js v24 on compiled JS (no transpiler overhead). BigInt baselines are guarded against V8 constant-folding and dead-code elimination to ensure fair comparison.
+
+### Arithmetic
+
+| Operation | FixedPoint | dnum | BigNumber.js | plain BigInt |
+|---|---:|---:|---:|---:|
+| Addition | **48,821,402** | 23,050,494 | 13,220,627 | 62,609,254 |
+| Subtraction | **46,123,366** | 22,932,617 | 14,295,216 | 57,004,234 |
+| Multiplication | **18,024,463** | 3,614,501 | 2,510,335 | 30,465,962 |
+| Division | **7,965,347** | 2,618,008 | 679,099 | 27,769,196 |
+| Negation | **70,856,959** | — | 28,683,419 | 86,655,736 |
+| Absolute value | **63,252,107** | 34,136,219 | 27,761,700 | 70,155,342 |
+| Square root | 138,051 | — | **221,647** | — |
+
+### Comparisons
+
+| Operation | FixedPoint | dnum | BigNumber.js | plain BigInt |
+|---|---:|---:|---:|---:|
+| Equal (eq) | **97,780,074** | 35,815,419 | 29,563,571 | 102,139,026 |
+| Greater than (gt) | **88,555,713** | 34,580,855 | 29,927,076 | 100,810,362 |
+| Less than (lt) | **87,459,835** | 34,995,875 | 29,698,561 | 101,387,607 |
+| Greater or equal (gte) | **87,588,687** | — | 29,974,806 | 101,268,592 |
+
+### Rounding & Precision
+
+| Operation | FixedPoint | dnum | BigNumber.js | plain BigInt |
+|---|---:|---:|---:|---:|
+| Round (half-up) | **12,388,563** | — | 7,858,430 | — |
+| Floor | **13,089,864** | 2,516,361 | 8,070,241 | — |
+| Ceil | **12,246,498** | 2,525,178 | 7,956,707 | — |
+| Precision change (18→6) | **26,231,015** | 5,331,133 | 6,521,731 | 10,979,108 |
+
+### Conversion & Utilities
+
+| Operation | FixedPoint | dnum | BigNumber.js | plain BigInt |
+|---|---:|---:|---:|---:|
+| Creation from string | 3,861,335 | 1,916,232 | **4,073,521** | 18,526,058 |
+| To decimal string | **7,819,748** | 1,720,008 | 6,614,876 | 20,246,125 |
+| Predicates (isZero etc.) | 83,906,467 | — | **106,068,155** | 84,713,415 |
+| Static min + max | **14,044,146** | — | 3,034,006 | 20,232,420 |
+
+### Large Numbers & Complex Operations
+
+| Operation | FixedPoint | dnum | BigNumber.js | plain BigInt |
+|---|---:|---:|---:|---:|
+| Large multiply | **17,328,043** | 3,325,616 | 878,583 | 21,076,595 |
+| Large division | **8,254,755** | 2,672,421 | 508,865 | 26,058,682 |
+| Mixed precision add (6+18) | **14,115,163** | — | 13,907,332 | 10,597,417 |
+| Chained: (a+b)*a-b | **11,593,415** | 2,772,107 | 2,019,168 | 19,405,599 |
+
+All values are operations per second (higher is better). **Bold** marks the fastest library result (excluding plain BigInt, which serves as the theoretical ceiling).
+
+Run benchmarks yourself:
+
+```bash
+npm run bench
+```
+
 ## Features
 
 - Arbitrary precision fixed-point arithmetic

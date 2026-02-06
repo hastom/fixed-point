@@ -3,6 +3,7 @@
 
 const Benchmark = require('benchmark')
 const { BigNumber } = require('bignumber.js')
+const dnum = require('dnum')
 const { FixedPoint, fpFromDecimal, Rounding } = require('../dist')
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
@@ -27,6 +28,14 @@ const bnSmall = new BigNumber('0.000000000000000001')
 const bnLarge = new BigNumber('999999999999999999.999999999999999999')
 const bnNeg = new BigNumber('-42.123456789012345678')
 const bnSqrt = new BigNumber('2.000000000000000000')
+
+// dnum values ([bigint, decimals] tuples)
+const dnA = dnum.from('12345.678901234567890', PRECISION)
+const dnB = dnum.from('9876.543210987654321', PRECISION)
+const dnSmall = dnum.from('0.000000000000000001', PRECISION)
+const dnLarge = dnum.from('999999999999999999.999999999999999999', PRECISION)
+const dnNeg = [-42123456789012345678n, PRECISION]
+const dnSqrt = dnum.from('2', PRECISION)
 
 // Plain BigInt values (scaled by 10^18 to represent the same decimals)
 // Wrapped in objects to prevent V8 constant-folding, which would make
@@ -64,6 +73,9 @@ makeSuite('Creation from decimal string', (suite) => {
     .add('BigNumber   new BigNumber(str)', () => {
       sink = new BigNumber('12345.678901234567890000')
     })
+    .add('dnum        dnum.from(str)', () => {
+      sink = dnum.from('12345.678901234567890', 18)
+    })
     .add('BigInt      BigInt(str)', () => {
       sink = BigInt('12345678901234567890')
     })
@@ -75,6 +87,9 @@ makeSuite('Addition', (suite) => {
   suite
     .add('FixedPoint  a.add(b)', () => {
       sink = fpA.add(fpB)
+    })
+    .add('dnum        add(a, b)', () => {
+      sink = dnum.add(dnA, dnB)
     })
     .add('BigNumber   a.plus(b)', () => {
       sink = bnA.plus(bnB)
@@ -91,6 +106,9 @@ makeSuite('Subtraction', (suite) => {
     .add('FixedPoint  a.sub(b)', () => {
       sink = fpA.sub(fpB)
     })
+    .add('dnum        sub(a, b)', () => {
+      sink = dnum.subtract(dnA, dnB)
+    })
     .add('BigNumber   a.minus(b)', () => {
       sink = bnA.minus(bnB)
     })
@@ -105,6 +123,9 @@ makeSuite('Multiplication', (suite) => {
   suite
     .add('FixedPoint  a.mul(b)', () => {
       sink = fpA.mul(fpB)
+    })
+    .add('dnum        mul(a, b)', () => {
+      sink = dnum.multiply(dnA, dnB, 18)
     })
     .add('BigNumber   a.times(b)', () => {
       sink = bnA.times(bnB)
@@ -121,6 +142,9 @@ makeSuite('Division', (suite) => {
     .add('FixedPoint  a.div(b)', () => {
       sink = fpA.div(fpB)
     })
+    .add('dnum        div(a, b)', () => {
+      sink = dnum.divide(dnA, dnB, 18)
+    })
     .add('BigNumber   a.div(b)', () => {
       sink = bnA.div(bnB)
     })
@@ -135,6 +159,9 @@ makeSuite('Comparison (eq)', (suite) => {
   suite
     .add('FixedPoint  a.eq(b)', () => {
       sink = fpA.eq(fpB)
+    })
+    .add('dnum        eq(a, b)', () => {
+      sink = dnum.equal(dnA, dnB)
     })
     .add('BigNumber   a.eq(b)', () => {
       sink = bnA.eq(bnB)
@@ -151,6 +178,9 @@ makeSuite('Comparison (gt)', (suite) => {
     .add('FixedPoint  a.gt(b)', () => {
       sink = fpA.gt(fpB)
     })
+    .add('dnum        gt(a, b)', () => {
+      sink = dnum.greaterThan(dnA, dnB)
+    })
     .add('BigNumber   a.gt(b)', () => {
       sink = bnA.gt(bnB)
     })
@@ -165,6 +195,9 @@ makeSuite('Comparison (lt)', (suite) => {
   suite
     .add('FixedPoint  a.lt(b)', () => {
       sink = fpA.lt(fpB)
+    })
+    .add('dnum        lt(a, b)', () => {
+      sink = dnum.lessThan(dnA, dnB)
     })
     .add('BigNumber   a.lt(b)', () => {
       sink = bnA.lt(bnB)
@@ -211,6 +244,9 @@ makeSuite('Absolute value', (suite) => {
     .add('FixedPoint  a.abs()', () => {
       sink = fpNeg.abs()
     })
+    .add('dnum        abs(a)', () => {
+      sink = dnum.abs(dnNeg)
+    })
     .add('BigNumber   a.abs()', () => {
       sink = bnNeg.abs()
     })
@@ -249,6 +285,9 @@ makeSuite('Rounding (floor)', (suite) => {
     .add('FixedPoint  a.floor()', () => {
       sink = fpA.floor()
     })
+    .add('dnum        floor(a)', () => {
+      sink = dnum.floor(dnA)
+    })
     .add('BigNumber   a.integerValue(ROUND_FLOOR)', () => {
       sink = bnA.integerValue(BigNumber.ROUND_FLOOR)
     })
@@ -258,6 +297,9 @@ makeSuite('Rounding (ceil)', (suite) => {
   suite
     .add('FixedPoint  a.ceil()', () => {
       sink = fpA.ceil()
+    })
+    .add('dnum        ceil(a)', () => {
+      sink = dnum.ceil(dnA)
     })
     .add('BigNumber   a.integerValue(ROUND_CEIL)', () => {
       sink = bnA.integerValue(BigNumber.ROUND_CEIL)
@@ -270,6 +312,9 @@ makeSuite('Precision change (18 → 6)', (suite) => {
   suite
     .add('FixedPoint  a.toPrecision(6)', () => {
       sink = fpA.toPrecision(6)
+    })
+    .add('dnum        setDecimals(a, 6)', () => {
+      sink = dnum.setDecimals(dnA, 6)
     })
     .add('BigNumber   a.dp(6)', () => {
       sink = bnA.dp(6)
@@ -285,6 +330,9 @@ makeSuite('To decimal string', (suite) => {
   suite
     .add('FixedPoint  a.toDecimalString()', () => {
       sink = fpA.toDecimalString()
+    })
+    .add('dnum        toString(a)', () => {
+      sink = dnum.toString(dnA)
     })
     .add('BigNumber   a.toFixed(18)', () => {
       sink = bnA.toFixed(18)
@@ -337,6 +385,9 @@ makeSuite('Large number multiplication', (suite) => {
     .add('FixedPoint  large.mul(large)', () => {
       sink = fpLarge.mul(fpLarge)
     })
+    .add('dnum        mul(large, large)', () => {
+      sink = dnum.multiply(dnLarge, dnLarge, 18)
+    })
     .add('BigNumber   large.times(large)', () => {
       sink = bnLarge.times(bnLarge)
     })
@@ -349,6 +400,9 @@ makeSuite('Large number division', (suite) => {
   suite
     .add('FixedPoint  large.div(a)', () => {
       sink = fpLarge.div(fpA)
+    })
+    .add('dnum        div(large, a)', () => {
+      sink = dnum.divide(dnLarge, dnA, 18)
     })
     .add('BigNumber   large.div(a)', () => {
       sink = bnLarge.div(bnA)
@@ -364,6 +418,9 @@ makeSuite('Chained: (a + b) * a - b', (suite) => {
   suite
     .add('FixedPoint', () => {
       sink = fpA.add(fpB).mul(fpA).sub(fpB)
+    })
+    .add('dnum', () => {
+      sink = dnum.subtract(dnum.multiply(dnum.add(dnA, dnB), dnA, 18), dnB)
     })
     .add('BigNumber', () => {
       sink = bnA.plus(bnB).times(bnA).minus(bnB)
@@ -400,7 +457,7 @@ function pad(str, len) {
 
 console.log('='.repeat(80))
 console.log('  Fixed-Point Library Benchmarks')
-console.log('  FixedPoint  vs  BigNumber.js  vs  plain BigInt')
+console.log('  FixedPoint  vs  dnum  vs  BigNumber.js  vs  plain BigInt')
 console.log('  Precision: 18 decimals')
 console.log('  Node.js ' + process.version)
 console.log('='.repeat(80))
