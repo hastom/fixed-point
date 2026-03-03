@@ -40,7 +40,7 @@ All benchmarks use 18-decimal precision and are run with Node.js v24 on compiled
 
 | Operation | FixedPoint | dnum | BigNumber.js | plain BigInt |
 |---|---:|---:|---:|---:|
-| Creation from string | 3,861,335 | 1,916,232 | **4,073,521** | 18,526,058 |
+| Creation from string | 3,947,559 | 1,784,326 | **4,112,075** | 18,446,067 |
 | To decimal string | **7,819,748** | 1,720,008 | 6,614,876 | 20,246,125 |
 | Predicates (isZero etc.) | 83,906,467 | — | **106,068,155** | 84,713,415 |
 | Static min + max | **14,044,146** | — | 3,034,006 | 20,232,420 |

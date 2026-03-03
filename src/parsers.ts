@@ -5,7 +5,7 @@ const pow10 = (base: bigint, exp: bigint) => base * (10n ** exp)
 
 const numberToDecimalString = (src: number, precision: number): string => {
   if (!Number.isFinite(src)) {
-    throw Error('Invalid number')
+    throw Error(`Invalid number: ${src}`)
   }
   let result: string
   if (Math.log10(src) <= 6) {
@@ -34,11 +34,11 @@ export const fpFromDecimal = (src: number | string | bigint, dstPrecision: numbe
 
   // Split string
   if (decimalString === '.') {
-    throw Error('Invalid number')
+    throw Error(`Invalid number: ${src}`)
   }
   const parts = decimalString.split('.')
   if (parts.length > 2) {
-    throw Error('Invalid number')
+    throw Error(`Invalid number: ${src}`)
   }
 
   // Prepare parts
@@ -51,11 +51,9 @@ export const fpFromDecimal = (src: number | string | bigint, dstPrecision: numbe
     frac = '0'
   }
   if (frac.length > dstPrecision) {
-    throw Error('Invalid number')
+    frac = frac.slice(0, dstPrecision)
   }
-  while (frac.length < dstPrecision) {
-    frac += '0'
-  }
+  frac = frac.padEnd(dstPrecision, '0')
 
   // Convert
   let base = pow10(BigInt(whole), _dstPrecision) + BigInt(frac)
