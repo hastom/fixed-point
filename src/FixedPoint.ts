@@ -420,7 +420,7 @@ export class FixedPoint {
     return this.toString()
   }
 
-  toDecimalString() {
+  toDecimalString(trimTrailingZeros = false) {
     const isNegative = this.isNegative()
     let str = abs(this.base).toString().padStart(Number(this.precision) + 1, '0')
     if (isNegative) {
@@ -429,7 +429,16 @@ export class FixedPoint {
     if (this.precision === 0n) {
       return str
     }
-    return str.slice(0, -Number(this.precision)) + '.' + str.slice(-Number(this.precision))
+    const intPart = str.slice(0, -Number(this.precision))
+    const fracPart = str.slice(-Number(this.precision))
+    if (!trimTrailingZeros) {
+      return `${intPart}.${fracPart}`
+    }
+    let end = fracPart.length
+    while (end > 0 && fracPart.charCodeAt(end - 1) === 48) {
+      end -= 1
+    }
+    return end === 0 ? intPart : `${intPart}.${fracPart.slice(0, end)}`
   }
 
   toDecimal() {

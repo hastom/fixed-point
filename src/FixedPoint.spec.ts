@@ -9,6 +9,38 @@ describe('fixed-point', () => {
     expect(n.toDecimalString()).toBe('1.000')
   })
 
+  describe('toDecimalString(trimTrailingZeros)', () => {
+    it('defaults to fixed-width fractional digits', () => {
+      const n = new FixedPoint(255000n, 5n)
+      expect(n.toDecimalString()).toBe('2.55000')
+      expect(n.toDecimalString(false)).toBe('2.55000')
+    })
+    it('strips trailing zeros in fractional part when true', () => {
+      expect(new FixedPoint(1_000n, 3n).toDecimalString(true)).toBe('1')
+      expect(new FixedPoint(255000n, 5n).toDecimalString(true)).toBe('2.55')
+      expect(new FixedPoint(33000n, 5n).toDecimalString(true)).toBe('0.33')
+    })
+    it('keeps non-zero fractional digits', () => {
+      expect(new FixedPoint(1234n, 3n).toDecimalString(true)).toBe('1.234')
+    })
+    it('handles zero', () => {
+      expect(new FixedPoint(0n, 3n).toDecimalString(true)).toBe('0')
+    })
+    it('drops decimal point when entire fractional part is zeros', () => {
+      expect(new FixedPoint(100_00000n, 5n).toDecimalString(true)).toBe('100')
+      expect(new FixedPoint(7_000_000_000n, 9n).toDecimalString(true)).toBe('7')
+      expect(new FixedPoint(-42_000n, 3n).toDecimalString(true)).toBe('-42')
+    })
+    it('handles negative values', () => {
+      expect(new FixedPoint(-255000n, 5n).toDecimalString(true)).toBe('-2.55')
+      expect(new FixedPoint(-1000n, 3n).toDecimalString(true)).toBe('-1')
+    })
+    it('is unchanged for precision 0', () => {
+      expect(new FixedPoint(42n, 0n).toDecimalString(true)).toBe('42')
+      expect(new FixedPoint(-7n, 0n).toDecimalString(true)).toBe('-7')
+    })
+  })
+
   describe('decimal parser', () => {
     it('must create instance from decimal number = 1', () => {
       const n = fpFromDecimal(1, 5)
