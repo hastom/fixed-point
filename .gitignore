@@ -9,3 +9,4 @@ dist/
 *.env
 .env
 !example.env
+.DS_Store
