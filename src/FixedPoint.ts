@@ -97,6 +97,81 @@ const pickPrecision = (
   }
 }
 
+/**
+ * Integer division `numerator / denominator` rounded according to the given mode.
+ * The remainder is the discarded fractional part; rounding decides whether the
+ * truncated quotient is moved one step away from zero.
+ */
+const roundDiv = (
+  numerator: bigint,
+  denominator: bigint,
+  rounding: Rounding,
+): bigint => {
+  if (denominator < 0n) {
+    numerator = -numerator
+    denominator = -denominator
+  }
+  const isNegative = numerator < 0n
+  const absNumerator = isNegative ? -numerator : numerator
+  const quotient = absNumerator / denominator
+  const remainder = absNumerator % denominator
+  if (remainder === 0n) {
+    return isNegative ? -quotient : quotient
+  }
+  const twiceRemainder = remainder * 2n
+  let roundUp = false
+  switch (rounding) {
+    case Rounding.ROUND_UP: // Away from zero
+      roundUp = true
+      break
+    case Rounding.ROUND_DOWN: // Towards zero
+      roundUp = false
+      break
+    case Rounding.ROUND_CEIL: // Towards Infinity
+      roundUp = !isNegative
+      break
+    case Rounding.ROUND_FLOOR: // Towards -Infinity
+      roundUp = isNegative
+      break
+    case Rounding.ROUND_HALF_UP: // If halfway, away from zero
+      roundUp = twiceRemainder >= denominator
+      break
+    case Rounding.ROUND_HALF_DOWN: // If halfway, towards zero
+      roundUp = twiceRemainder > denominator
+      break
+    case Rounding.ROUND_HALF_EVEN: // If halfway, towards even neighbour
+      roundUp = twiceRemainder > denominator || (twiceRemainder === denominator && quotient % 2n === 1n)
+      break
+    case Rounding.ROUND_HALF_CEIL: // If halfway, towards Infinity
+      roundUp = twiceRemainder > denominator || (twiceRemainder === denominator && !isNegative)
+      break
+    case Rounding.ROUND_HALF_FLOOR: // If halfway, towards -Infinity
+      roundUp = twiceRemainder > denominator || (twiceRemainder === denominator && isNegative)
+      break
+  }
+  const rounded = roundUp ? quotient + 1n : quotient
+  return isNegative ? -rounded : rounded
+}
+
+/**
+ * Like {@link toPrecision}, but when precision is reduced the discarded digits
+ * are rounded according to the given mode instead of always being truncated.
+ */
+const toPrecisionRounded = (
+  base: bigint,
+  to: bigint,
+  from: bigint,
+  rounding?: Rounding,
+): bigint => {
+  if (to >= from) {
+    return toPrecision(base, to, from)
+  }
+  if (rounding === undefined || rounding === Rounding.ROUND_DOWN) {
+    return base / pow10(from - to)
+  }
+  return roundDiv(base, pow10(from - to), rounding)
+}
+
 export class FixedPoint {
 
   static min(arg0: FixedPoint, ...args: FixedPoint[]): FixedPoint {
@@ -154,28 +229,68 @@ export class FixedPoint {
     return new FixedPoint(toPrecision(aBase - bBase, targetPrecision, calcPrecision), targetPrecision)
   }
 
-  mul(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
-    if (resultPrecision === undefined && this.precision === arg.precision) {
+  mul(
+    arg: FixedPoint,
+    resultPrecision?: PrecisionResolution,
+    rounding?: Rounding,
+  ): FixedPoint {
+    // Hot path: kept tiny and byte-identical to the original so V8 keeps inlining it.
+    // Any rounding/precision request is delegated to the (cold) general path.
+    if (rounding === undefined && resultPrecision === undefined && this.precision === arg.precision) {
       return new FixedPoint((this.base * arg.base) / pow10(this.precision), this.precision)
     }
+    return this.mulGeneral(arg, resultPrecision, rounding)
+  }
+
+  private mulGeneral(
+    arg: FixedPoint,
+    resultPrecision: PrecisionResolution | undefined,
+    rounding: Rounding | undefined,
+  ): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
     const calcPrecision = aPrecision + bPrecision
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
     const rawBase = this.base * arg.base // at calcPrecision
-    return new FixedPoint(toPrecision(rawBase, targetPrecision, calcPrecision), targetPrecision)
+    return new FixedPoint(toPrecisionRounded(rawBase, targetPrecision, calcPrecision, rounding), targetPrecision)
   }
 
-  div(arg: FixedPoint, resultPrecision?: PrecisionResolution): FixedPoint {
-    if (resultPrecision === undefined && this.precision === arg.precision) {
+  div(
+    arg: FixedPoint,
+    resultPrecision?: PrecisionResolution,
+    rounding?: Rounding,
+  ): FixedPoint {
+    // Hot path: kept tiny and byte-identical to the original so V8 keeps inlining it.
+    // Any rounding/precision request is delegated to the (cold) general path.
+    if (rounding === undefined && resultPrecision === undefined && this.precision === arg.precision) {
       return new FixedPoint((this.base * pow10(this.precision)) / arg.base, this.precision)
     }
+    return this.divGeneral(arg, resultPrecision, rounding)
+  }
+
+  private divGeneral(
+    arg: FixedPoint,
+    resultPrecision: PrecisionResolution | undefined,
+    rounding: Rounding | undefined,
+  ): FixedPoint {
     const aPrecision = this.precision
     const bPrecision = arg.precision
     const targetPrecision = pickPrecision(aPrecision, bPrecision, resultPrecision ?? Decimals.max)
-    // (aBase * 10^bPrecision) / bBase yields result at precision aPrecision
-    const newBase = (this.base * pow10(bPrecision)) / arg.base
-    return new FixedPoint(toPrecision(newBase, targetPrecision, aPrecision), targetPrecision)
+    // result at targetPrecision: this.base * 10^(bPrecision + targetPrecision - aPrecision) / arg.base
+    const shift = bPrecision + targetPrecision - aPrecision
+    let numerator: bigint
+    let denominator: bigint
+    if (shift >= 0n) {
+      numerator = this.base * pow10(shift)
+      denominator = arg.base
+    } else {
+      numerator = this.base
+      denominator = arg.base * pow10(-shift)
+    }
+    if (rounding === undefined || rounding === Rounding.ROUND_DOWN) {
+      return new FixedPoint(numerator / denominator, targetPrecision)
+    }
+    return new FixedPoint(roundDiv(numerator, denominator, rounding), targetPrecision)
   }
 
   cmp(arg: FixedPoint, comparator: (a: bigint, b: bigint) => boolean): boolean {

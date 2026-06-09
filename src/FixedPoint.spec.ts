@@ -1083,6 +1083,42 @@ describe('fixed-point', () => {
         expect(e.base).toBe(44682729210000000000000000000000000000000000000000000000000000000000000000n)
         expect(e.toDecimalString()).toBe('44682729210000000000000000000000000000.000000000000000000000000000000000000')
       })
+
+      describe('rounding', () => {
+        // 0.333333333 * 0.5 = 0.1666666665 — exactly halfway at precision 9
+        it('must truncate by default (ROUND_DOWN)', () => {
+          const a = fpFromDecimal('0.333333333', 9)
+          const b = fpFromDecimal('0.5', 9)
+          expect(a.mul(b).toDecimalString()).toBe('0.166666666')
+        })
+        it('must apply ROUND_HALF_UP', () => {
+          const a = fpFromDecimal('0.333333333', 9)
+          const b = fpFromDecimal('0.5', 9)
+          expect(a.mul(b, undefined, Rounding.ROUND_HALF_UP).toDecimalString()).toBe('0.166666667')
+        })
+        it('must apply ROUND_HALF_EVEN', () => {
+          const a = fpFromDecimal('0.333333333', 9)
+          const b = fpFromDecimal('0.5', 9)
+          expect(a.mul(b, undefined, Rounding.ROUND_HALF_EVEN).toDecimalString()).toBe('0.166666666')
+        })
+        it('must apply ROUND_UP', () => {
+          const a = fpFromDecimal('0.333333333', 9)
+          const b = fpFromDecimal('0.5', 9)
+          expect(a.mul(b, undefined, Rounding.ROUND_UP).toDecimalString()).toBe('0.166666667')
+        })
+        it('must apply rounding on the explicit-precision path', () => {
+          const a = fpFromDecimal('0.333333333', 9)
+          const b = fpFromDecimal('0.5', 9)
+          const c = a.mul(b, Decimals.left, Rounding.ROUND_HALF_UP)
+          expect(c.precision).toBe(9n)
+          expect(c.toDecimalString()).toBe('0.166666667')
+        })
+        it('must round towards zero for negatives with ROUND_CEIL', () => {
+          const a = fpFromDecimal('-0.333333333', 9)
+          const b = fpFromDecimal('0.5', 9)
+          expect(a.mul(b, undefined, Rounding.ROUND_CEIL).toDecimalString()).toBe('-0.166666666')
+        })
+      })
     })
 
     describe('/', () => {
@@ -1120,6 +1156,48 @@ describe('fixed-point', () => {
         expect(c.precision).toBe(9n)
         expect(c.base).toBe(333333333n)
         expect(c.toDecimalString()).toBe('0.333333333')
+      })
+
+      describe('rounding', () => {
+        it('must truncate by default (ROUND_DOWN)', () => {
+          const a = fpFromDecimal('2', 9)
+          const b = fpFromDecimal('3', 9)
+          expect(a.div(b).toDecimalString()).toBe('0.666666666')
+        })
+        it('must apply ROUND_HALF_UP', () => {
+          const a = fpFromDecimal('2', 9)
+          const b = fpFromDecimal('3', 9)
+          expect(a.div(b, undefined, Rounding.ROUND_HALF_UP).toDecimalString()).toBe('0.666666667')
+        })
+        it('must apply ROUND_CEIL', () => {
+          const a = fpFromDecimal('2', 9)
+          const b = fpFromDecimal('3', 9)
+          expect(a.div(b, undefined, Rounding.ROUND_CEIL).toDecimalString()).toBe('0.666666667')
+        })
+        it('must apply ROUND_UP even when below halfway', () => {
+          const a = fpFromDecimal('1', 9)
+          const b = fpFromDecimal('3', 9)
+          expect(a.div(b, undefined, Rounding.ROUND_UP).toDecimalString()).toBe('0.333333334')
+        })
+        it('must apply rounding on the explicit-precision path', () => {
+          const a = fpFromDecimal('2', 9)
+          const b = fpFromDecimal('3', 9)
+          const c = a.div(b, Decimals.left, Rounding.ROUND_HALF_UP)
+          expect(c.precision).toBe(9n)
+          expect(c.toDecimalString()).toBe('0.666666667')
+        })
+        it('must round towards -Infinity for negatives with ROUND_FLOOR', () => {
+          const a = fpFromDecimal('-2', 9)
+          const b = fpFromDecimal('3', 9)
+          expect(a.div(b, undefined, Rounding.ROUND_FLOOR).toDecimalString()).toBe('-0.666666667')
+        })
+        it('must round at the target precision across mixed precisions', () => {
+          const a = fpFromDecimal('1', 9)
+          const b = fpFromDecimal('3', 18)
+          const c = a.div(b, undefined, Rounding.ROUND_UP)
+          expect(c.precision).toBe(18n)
+          expect(c.toDecimalString()).toBe('0.333333333333333334')
+        })
       })
     })
   })

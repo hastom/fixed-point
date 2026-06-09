@@ -184,7 +184,7 @@ const result = a.sub(b);
 console.log(result.toDecimalString()); // '20.200000000000000000'
 ```
 
-##### `mul(other: FixedPoint): FixedPoint`
+##### `mul(other: FixedPoint, resultPrecision?: PrecisionResolution, rounding?: Rounding): FixedPoint`
 
 Multiplies the fixed-point number by another value.
 
@@ -195,7 +195,19 @@ const result = a.mul(b);
 console.log(result.toDecimalString()); // '7.500000000000000000'
 ```
 
-##### `div(other: FixedPoint): FixedPoint`
+When the exact product has more decimals than the resulting precision, the extra
+digits are dropped using `rounding` (defaults to `ROUND_DOWN`, i.e. truncation):
+
+```typescript
+import { Rounding } from '@hastom/fixed-point';
+
+const a = fpFromDecimal('0.333333333', 9);
+const b = fpFromDecimal('0.5', 9); // exact product is 0.1666666665
+console.log(a.mul(b).toDecimalString()); // '0.166666666' (ROUND_DOWN)
+console.log(a.mul(b, undefined, Rounding.ROUND_HALF_UP).toDecimalString()); // '0.166666667'
+```
+
+##### `div(other: FixedPoint, resultPrecision?: PrecisionResolution, rounding?: Rounding): FixedPoint`
 
 Divides the fixed-point number by another value.
 
@@ -204,6 +216,18 @@ const a = fpFromDecimal('10', 18);
 const b = fpFromDecimal('2.5', 18);
 const result = a.div(b);
 console.log(result.toDecimalString()); // '4.000000000000000000'
+```
+
+When the quotient does not fit in the resulting precision, the discarded digits
+are rounded using `rounding` (defaults to `ROUND_DOWN`, i.e. truncation):
+
+```typescript
+import { Rounding } from '@hastom/fixed-point';
+
+const a = fpFromDecimal('2', 9);
+const b = fpFromDecimal('3', 9); // 2 / 3 = 0.6666...
+console.log(a.div(b).toDecimalString()); // '0.666666666' (ROUND_DOWN)
+console.log(a.div(b, undefined, Rounding.ROUND_HALF_UP).toDecimalString()); // '0.666666667'
 ```
 
 
