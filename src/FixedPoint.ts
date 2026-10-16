@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { abs, max2, min2, pow10, toPrecision } from './math'
+import { abs, max2, min2, pow10, toPrecision } from './math.js'
 
 export enum Rounding {
   /**

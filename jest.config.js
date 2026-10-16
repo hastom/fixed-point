@@ -7,4 +7,7 @@ module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts', 'node'],
   resetMocks: false,
   testLocationInResults: true,
+  moduleNameMapper: {
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
 };

@@ -2,3 +2,9 @@
 .eslintrc.js
 .idea
 tsconfig.json
+tsconfig.esm.json
+.claude
+benchmarks
+jest.config.js
+src/**/*.spec.ts
+dist/**/*.spec.*

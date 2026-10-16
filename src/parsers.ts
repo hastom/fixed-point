@@ -1,5 +1,5 @@
-import { FixedPoint } from './FixedPoint'
-import { toPrecision } from './math'
+import { FixedPoint } from './FixedPoint.js'
+import { toPrecision } from './math.js'
 
 const pow10 = (base: bigint, exp: bigint) => base * (10n ** exp)
 
