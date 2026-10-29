@@ -8,3 +8,4 @@ benchmarks
 jest.config.js
 src/**/*.spec.ts
 dist/**/*.spec.*
+scripts
